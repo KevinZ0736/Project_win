@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="project\freecplus\_cmpublic.h">
+      <Filter>freecplus</Filter>
+    </ClInclude>
+    <ClInclude Include="project\freecplus\_ftp.h">
+      <Filter>freecplus</Filter>
+    </ClInclude>
+    <ClInclude Include="project\freecplus\_public.h">
+      <Filter>freecplus</Filter>
+    </ClInclude>
+    <ClInclude Include="project\freecplus\ftplib.h">
+      <Filter>freecplus</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="project\freecplus\_ftp.cpp">
+      <Filter>freecplus</Filter>
+    </ClCompile>
+    <ClCompile Include="project\freecplus\_public.cpp">
+      <Filter>freecplus</Filter>
+    </ClCompile>
+    <ClCompile Include="project\freecplus\ftplib.c">
+      <Filter>freecplus</Filter>
+    </ClCompile>
+    <ClCompile Include="guard.cpp">
+      <Filter>idc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="freecplus">
+      <UniqueIdentifier>{d4eed041-4491-4ccd-a9be-6669b5b31f53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="idc">
+      <UniqueIdentifier>{cb858514-aab2-4f96-bb5e-b8058eacb985}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
