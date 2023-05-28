@@ -2,6 +2,12 @@
 //  ./idc1/bin/crtsurfdata4 ./idc1/ini/stcode.ini ./idc1/log/demo4.log ./idc1/data csv
 #include "_public.h"
 
+//增加生成历史数据文件的功能，为压缩文件和清理文件模块准备历史数据文件
+//怎么加信号处理函数，处理2和15信号
+//解决调用exit函数退出，局部对象没有调用析构函数的问题
+//把心跳信息写入共享内存
+
+
 //省   站号  站名 纬度   经度  海拔高度
 //安徽, 58015, 砀山, 34.27, 116.2, 44.2
 //安徽, 58102, 亳州, 33.47, 115.44, 39.1
@@ -30,17 +36,26 @@ struct st_surfdata
 
 vector<struct st_surfdata> vsurfdata; // 存放全国气象站点分钟观测数据的容器
 vector<struct  st_stcode> vstcode;   //存放站点信息
-CLogFile logfile;
+CLogFile logfile;                    //日志文件
 CCmdStr CmdStr;
+CFile File;                          //文件
+CPActive PActive;                    //进程心跳
 struct st_stcode stcode;
+char strddatetime[21];
 void CrtSurfData();                  //模拟生成全国站点分钟观测数据，存放在vsurfdata容器中
 bool LoadSTCode(const char* inifile);//加载站点信息
 bool CrtSurfFile(const char* outpath, const  char* datafmt); //输出数据信息
-char strddatetime[21];
+void EXIT(int sig);
+
+
+void EXIT(int sig)
+{
+	printf("收到信号 sig=%d\n", sig);
+	exit(0);//exit函数不会调用局部对象的析构函数，会调用全局对象的析构函数，return会调用局部和全局对象的析构函数
+}
 
 bool LoadSTCode(const char* inifile)
 {
-	CFile File;
 
 	//打开站点参数文件
 	if (File.Open(inifile, "r") == false)
@@ -84,8 +99,6 @@ void CrtSurfData()
 	//播随机数种子
 	srand(time(0));
 
-	memset(strddatetime, 0, sizeof(strddatetime));
-	LocalTime(strddatetime, "yyyymmddhh24miss");
 	struct st_surfdata stsurfdata;
 
 	for (auto x : vstcode)
@@ -110,7 +123,6 @@ void CrtSurfData()
 //正确写入文件 1）创建临时文件 2）往临时文件中写入数据 3）关闭临时文件 4）把临时文件改名为正式文件
 bool CrtSurfFile(const char* outpath, const char* datafmt)
 {
-	CFile File;
 	// 拼接生成数据的文件名，如：/tmp/surfdata/SURF_ZH_20230513092200_2254.csv
 	char strFileName[301];
 	sprintf(strFileName, "%s/SURF_ZH_%s_%d.%s", outpath, strddatetime, getpid(), datafmt);
@@ -157,7 +169,13 @@ bool CrtSurfFile(const char* outpath, const char* datafmt)
 		}
 	}
 
+	if (strcmp(datafmt, "xml") == 0) File.Fprintf("</data>\n");
+	if (strcmp(datafmt, "json") == 0) File.Fprintf("\n]}");
+
+
 	File.CloseAndRename();
+
+	UTime(strFileName, strddatetime);//修改文件的时间属性
 
 	logfile.Write("生成数据文件%s成功，数据时间%s,记录数%d。\n", strFileName, strddatetime, vsurfdata.size());
 
@@ -168,40 +186,55 @@ int main(int argc, char* argv[])
 {
 	//参数文件，测试数据目录，程序运行日志
 
-	if (argc != 6)
+	if ((argc != 6) && (argc != 5))
 	{
-		printf("请输入参数文件名，测试数据目录，程序运行日志,输出目录,指定文件格式（xml,csv,json）\n\n");
+		printf("请输入运行程序，测试数据目录，程序运行日志,输出目录,指定文件格式（xml,csv,json）[datatime](可选)\n\n \
+			    example: ./crtsurfdata.out ./idc1/ini/stcode.ini ./idc1/log/demo4.log ./idc1/data csv 20230525123000\n");
 		return -1;
 	}
 
-	if (logfile.Open(argv[3], "a+", false) == false)
+	if (logfile.Open(argv[2], "a+", false) == false)
 	{
-		printf("日志文件打开失败\n", argv[3]);
+		printf("%s日志文件打开失败\n", argv[2]);
 		return -1;
 	}
+	// 关闭全部信号输出，请勿kill+9,强行终止
+	CloseIOAndSignal();
+	signal(SIGINT, EXIT); signal(SIGTERM, EXIT);
 
-	logfile.Write("demo2 开始运行。\n");
+	logfile.Write("crtsurfdata 开始运行。\n");
+
+	PActive.AddPInfo(20, "crtsurfdata");
 
 	//把站点参数文件加载到vstcode中
-	if (LoadSTCode(argv[2]) == false) return -1;
+	if (LoadSTCode(argv[1]) == false) return -1;
+
+	//获取当前时间或者指定时间
+	memset(strddatetime, 0, sizeof(strddatetime));
+
+	if (argc == 5)
+		LocalTime(strddatetime, "yyyymmddhh24miss");
+	else
+		STRCPY(strddatetime, sizeof(strddatetime), argv[5]);
+
 	//生成观测数据，将数据存放在vsurfdata容器中
 	CrtSurfData();
 
-	if (strstr(argv[5], "xml") != 0)
+	if (strstr(argv[4], "xml") != 0)
 	{
-		CrtSurfFile(argv[4], "xml");
+		CrtSurfFile(argv[3], "xml");
 	}
-	else if (strstr(argv[5], "csv") != 0)
+	else if (strstr(argv[4], "csv") != 0)
 	{
-		CrtSurfFile(argv[4], "csv");
+		CrtSurfFile(argv[3], "csv");
 	}
-	else if (strstr(argv[5], "json") != 0)
+	else if (strstr(argv[4], "json") != 0)
 	{
-		CrtSurfFile(argv[4], "json");
+		CrtSurfFile(argv[3], "json");
 	}
 
 
-	logfile.Write("demo2 运行结束。\n");
+	logfile.Write("crtsurfdata 运行结束。\n");
 
 	return 0;
 }

@@ -41,10 +41,20 @@
     <ClInclude Include="project\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="guard.cpp" />
+    <ClCompile Include="crtsurdata\crtsurfdata.cpp" />
+    <ClCompile Include="crtsurdata\crtsurfdata1.cpp" />
+    <ClCompile Include="crtsurdata\crtsurfdata2.cpp" />
+    <ClCompile Include="crtsurdata\crtsurfdata3.cpp" />
+    <ClCompile Include="FTP\FtpClient.cpp" />
     <ClCompile Include="project\freecplus\ftplib.c" />
     <ClCompile Include="project\freecplus\_ftp.cpp" />
     <ClCompile Include="project\freecplus\_public.cpp" />
+    <ClCompile Include="tool\checkproc.cpp" />
+    <ClCompile Include="tool\deletefiles.cpp" />
+    <ClCompile Include="tool\gzipfiles.cpp" />
+    <ClCompile Include="tool\heartbeat.cpp" />
+    <ClCompile Include="tool\procctl.cpp" />
+    <ClCompile Include="tool\shm.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{59d0b720-f65c-47ed-8802-5f9ff34fdc61}</ProjectGuid>
