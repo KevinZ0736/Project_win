@@ -659,7 +659,9 @@ GLOBALDEF int FtpLogin(const char* user, const char* pass, netbuf* nControl)
 
 	if (((strlen(user) + 7) > sizeof(tempbuf)) ||
 		((strlen(pass) + 7) > sizeof(tempbuf)))
+	{
 		return 0;
+	}
 	sprintf(tempbuf, "USER %s", user);
 	if (!FtpSendCmd(tempbuf, '3', nControl))
 	{
