@@ -46,6 +46,9 @@
     <ClCompile Include="project\freecplus\_public.cpp" />
     <ClCompile Include="tool\ftpgetfiles.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="FTP\config.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{59d0b720-f65c-47ed-8802-5f9ff34fdc61}</ProjectGuid>
     <Keyword>Linux</Keyword>
