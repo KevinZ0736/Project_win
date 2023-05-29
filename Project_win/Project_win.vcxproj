@@ -41,10 +41,10 @@
     <ClInclude Include="project\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FTP\FtpClient.cpp" />
     <ClCompile Include="project\freecplus\ftplib.c" />
     <ClCompile Include="project\freecplus\_ftp.cpp" />
     <ClCompile Include="project\freecplus\_public.cpp" />
+    <ClCompile Include="tool\ftpgetfiles.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{59d0b720-f65c-47ed-8802-5f9ff34fdc61}</ProjectGuid>
@@ -92,7 +92,7 @@
     <RemoteIntRelDir>$(RemoteProjectRelDir)/FTP/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/FTP/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
-    <TargetName>FtpClient</TargetName>
+    <TargetName>ftpgetfiles</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile />
