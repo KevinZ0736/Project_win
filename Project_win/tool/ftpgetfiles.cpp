@@ -297,10 +297,7 @@ bool LoadListFile()
 		vlistfile2.push_back(stfileinfo);
 	}
 	printf("vlistfile2\n");
-	for (auto x : vlistfile2)
-	{
-		printf("%s,%s\n", x.filename, x.mtime);
-	}
+
 	/*for (auto x : vlistfile)
 	{
 		logfile.Write("filename=%s=\n", x.filename);
@@ -333,10 +330,7 @@ bool LoadOKFile()
 
 		vlistfile1.push_back(stfileinfo);
 	}
-	for (auto x : vlistfile1)
-	{
-		printf("%s,%s\n", x.filename, x.mtime);
-	}
+
 	return true;
 }
 
