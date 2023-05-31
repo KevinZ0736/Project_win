@@ -1,0 +1,12 @@
+﻿<host>124.222.175.81:21</host>
+<mode>1</mode>
+<username>KevinZ</username>
+<password>19980408</password>
+<localpath>/usr/project/Project_win/FTP/data</localpath>
+<remotepath>/usr/project/Project_win/idc/bin/x64/Debug/idc1/data</remotepath>
+<matchname>SURF_ZH*.XML,SURF_ZH*.CSV</matchname>
+<listfilename>/usr/project/Project_win/FTP/ftplist/ftpgetfiles_surfdata.list</listfilename>
+<ptype>1</ptype>
+<remotepathbak>/tmp/idc/surfdatabak</remotepathbak>
+<okfilename>/usr/project/Project_win/FTP/ftplist/ftpgetfiles_surfdata.xml</okfilename>
+<checkmtime>true</checkmtime>
