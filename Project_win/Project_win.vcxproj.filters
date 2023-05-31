@@ -24,9 +24,7 @@
     <ClCompile Include="project\freecplus\ftplib.c">
       <Filter>freecplus</Filter>
     </ClCompile>
-    <ClCompile Include="guard.cpp">
-      <Filter>idc</Filter>
-    </ClCompile>
+    <ClCompile Include="FTP\FtpClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
