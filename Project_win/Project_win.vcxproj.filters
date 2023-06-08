@@ -24,7 +24,7 @@
     <ClCompile Include="project\freecplus\ftplib.c">
       <Filter>freecplus</Filter>
     </ClCompile>
-    <ClCompile Include="FTP\FtpClient.cpp" />
+    <ClCompile Include="TcpFile\TcpPutFiles.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
@@ -33,5 +33,8 @@
     <Filter Include="idc">
       <UniqueIdentifier>{cb858514-aab2-4f96-bb5e-b8058eacb985}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="FTP\config.txt" />
   </ItemGroup>
 </Project>

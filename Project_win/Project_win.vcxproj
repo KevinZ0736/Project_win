@@ -44,7 +44,7 @@
     <ClCompile Include="project\freecplus\ftplib.c" />
     <ClCompile Include="project\freecplus\_ftp.cpp" />
     <ClCompile Include="project\freecplus\_public.cpp" />
-    <ClCompile Include="tool\ftpgetfiles.cpp" />
+    <ClCompile Include="TcpFile\TcpPutFiles.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="FTP\config.txt" />
@@ -92,8 +92,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <RemoteIntRelDir>$(RemoteProjectRelDir)/FTP/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
-    <RemoteOutRelDir>$(RemoteProjectRelDir)/FTP/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
+    <RemoteIntRelDir>$(RemoteProjectRelDir)/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
+    <RemoteOutRelDir>$(RemoteProjectRelDir)/tool/bin/</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
     <TargetName>ftpgetfiles</TargetName>
   </PropertyGroup>

@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 	}
 
 	//忽略全部信号和IO
-	CloseIOAndSignal(true);
+	CloseIOAndSignal();
 
 	//打开日志文件
 	if (logfile.Open(argv[1], "a+") == false)

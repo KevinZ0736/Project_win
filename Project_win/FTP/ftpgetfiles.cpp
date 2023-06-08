@@ -6,6 +6,8 @@ CLogFile logfile;
 
 Cftp ftp;
 
+CPActive PActive;  //心跳对象
+
 struct st_arg
 {
 	char host[31];           // 远程服务端的IP和端口。
@@ -43,7 +45,7 @@ void Help();
 bool XmlToarg(const char* strxmlbuffer);  //把xml解析到参数starg结构中。
 bool FtpGetFiles();                 //下载文件功能的主函数
 bool LoadListFile();                //把ftp.nlist()方法获取到的list文件加载到容器vfilelist中
-const char* LoadConfig();           //加载配置文件
+const char* LoadConfig(const char* local);           //加载配置文件
 bool LoadOKFile();                  //加载okfilename文件中的内容到内容vlistfile1中
 bool CompVector();                  //比较vlistfile2和vlistfile1，得到vlistfile3和4
 bool WriteToOKFile();               //把容器vlistfile3中的内容写入okfilename文件，覆盖之前的旧okfilename文件
@@ -52,25 +54,27 @@ bool AppendToOKFile(struct st_fileinfo* stfileinfo);  //把下载成功的文件
 int main(int argc, char* argv[])
 {
 	// 第一步计划，把服务器上某目录的文件全部下载到本地目录（可以指定文件名的匹配规则）
-	if (argc != 2)
+	if (argc != 3)
 	{
 		Help(); return -1;
 	}
 
 	//处理信号函数
-	//CloseIOAndSignal(true);
+	CloseIOAndSignal();
 	signal(SIGINT, EXIT);  signal(SIGTERM, EXIT);
 
 	//打开日志文件
-	if (logfile.Open(argv[1], "a+") == false)
+	if (logfile.Open(argv[2], "a+") == false)
 	{
 		printf("logfile open(%s) failed\n", argv[1]);
 		return -1;
 	}
 
 	//解析xml,得到程序运行的参数
-	if (XmlToarg(LoadConfig()) == false)
+	if (XmlToarg(LoadConfig(argv[1])) == false)
 		return -1;
+
+	PActive.AddPInfo(starg.timeout, starg.pname); //把进程心跳信息写入共享内存
 
 	//登录ftp服务器
 	if (ftp.login(starg.host, starg.username, starg.password, starg.mode) == false)
@@ -183,11 +187,11 @@ bool XmlToarg(const char* strxmlbuffer)
 	// 是否需要检查服务端文件的时间，true-需要，false-不需要，此参数只有当ptype=1时才有效，缺省为false。
 	GetXMLBuffer(strxmlbuffer, "checkmtime", &starg.checkmtime);
 
-	//GetXMLBuffer(strxmlbuffer, "timeout", &starg.timeout);   // 进程心跳的超时时间。
-	//if (starg.timeout == 0) { logfile.Write("timeout is null.\n");  return false; }
+	GetXMLBuffer(strxmlbuffer, "timeout", &starg.timeout);   // 进程心跳的超时时间。
+	if (starg.timeout == 0) { logfile.Write("timeout is null.\n");  return false; }
 
-	//GetXMLBuffer(strxmlbuffer, "pname", starg.pname, 50);     // 进程名。
-	//if (strlen(starg.pname) == 0) { logfile.Write("pname is null.\n");  return false; }
+	GetXMLBuffer(strxmlbuffer, "pname", starg.pname, 50);     // 进程名。
+	if (strlen(starg.pname) == 0) { logfile.Write("pname is null.\n");  return false; }
 
 	return true;
 }
@@ -206,12 +210,16 @@ bool FtpGetFiles()
 		logfile.Write("ftp.nlist(%s) failed.\n,starg.remotepath");
 		return false;
 	}
-	//把ftp.nlist()方法获取到的list文件加载到容器vfilelist中。
+	PActive.UptATime();
+
+	//把ftp.nlist()方法获取到的list文件加载到容器vfilelist2中。
 	if (LoadListFile() == false)
 	{
 		logfile.Write("LoadListFile() failed.\n");
 		return false;
 	}
+	PActive.UptATime();
+
 	if (starg.ptype == 1)
 	{
 		//加载okfilename文件中的内容到内容vlistfile1中
@@ -221,6 +229,8 @@ bool FtpGetFiles()
 		//把容器vlistfile3中的内容写入okfilename文件，覆盖之前的旧okfilename文件
 		WriteToOKFile();
 	}
+
+	PActive.UptATime();
 
 	char strremotefilename[301], strlocalfilename[301];//远程文件的地址和本地文件的地址
 	//遍历容器vfilelist4(下载清单)
@@ -236,6 +246,9 @@ bool FtpGetFiles()
 			logfile.WriteEx("failed.\n"); return false;
 		}
 		logfile.WriteEx("ok\n");
+
+		PActive.UptATime();  //更新进程的心跳
+
 		//把下载成功的文件追加到vlistfile1中
 		if (starg.ptype == 1) AppendToOKFile(&x);
 
@@ -284,7 +297,7 @@ bool LoadListFile()
 
 		if (MatchStr(stfileinfo.filename, starg.matchname) == false) continue;
 
-		if (starg.checkmtime == true)
+		if ((starg.ptype == 1) && (starg.checkmtime == true))
 		{
 			if (ftp.mtime(stfileinfo.filename) == false)
 			{
@@ -296,7 +309,6 @@ bool LoadListFile()
 
 		vlistfile2.push_back(stfileinfo);
 	}
-	printf("vlistfile2\n");
 
 	/*for (auto x : vlistfile)
 	{
@@ -395,10 +407,10 @@ bool AppendToOKFile(struct st_fileinfo* stfileinfo)
 }
 
 //读取配置文件
-const char* LoadConfig()
+const char* LoadConfig(const char* local)
 {
 	ifstream Conf;
-	Conf.open("config.txt", ios::in);
+	Conf.open(local, ios::in);
 	if (Conf.is_open() == false)
 	{
 		logfile.Write("config open failed.\n");
