@@ -1,30 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="project\freecplus\_cmpublic.h">
+    <ClInclude Include="lib\freecplus\_cmpublic.h">
       <Filter>freecplus</Filter>
     </ClInclude>
-    <ClInclude Include="project\freecplus\_ftp.h">
+    <ClInclude Include="lib\freecplus\_ftp.h">
       <Filter>freecplus</Filter>
     </ClInclude>
-    <ClInclude Include="project\freecplus\_public.h">
+    <ClInclude Include="lib\freecplus\_public.h">
       <Filter>freecplus</Filter>
     </ClInclude>
-    <ClInclude Include="project\freecplus\ftplib.h">
+    <ClInclude Include="lib\freecplus\ftplib.h">
       <Filter>freecplus</Filter>
     </ClInclude>
+    <ClInclude Include="lib\freecplus\_mysql.h" />
+    <ClInclude Include="Database\MysqlConn.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="project\freecplus\_ftp.cpp">
+    <ClCompile Include="lib\freecplus\_ftp.cpp">
       <Filter>freecplus</Filter>
     </ClCompile>
-    <ClCompile Include="project\freecplus\_public.cpp">
+    <ClCompile Include="lib\freecplus\_public.cpp">
       <Filter>freecplus</Filter>
     </ClCompile>
-    <ClCompile Include="project\freecplus\ftplib.c">
+    <ClCompile Include="lib\freecplus\ftplib.c">
       <Filter>freecplus</Filter>
     </ClCompile>
-    <ClCompile Include="TcpFile\TcpPutFiles.cpp" />
+    <ClCompile Include="lib\freecplus\_mysql.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
