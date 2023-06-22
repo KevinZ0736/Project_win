@@ -15,6 +15,7 @@
     </ClInclude>
     <ClInclude Include="lib\freecplus\_mysql.h" />
     <ClInclude Include="Database\MysqlConn.h" />
+    <ClInclude Include="Database\ConnectionPool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\freecplus\_ftp.cpp">
@@ -27,6 +28,8 @@
       <Filter>freecplus</Filter>
     </ClCompile>
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
+    <ClCompile Include="Database\MysqlConn.cpp" />
+    <ClCompile Include="Database\ConnectionPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
@@ -38,5 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="FTP\config.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Database\DBconfig.xml" />
   </ItemGroup>
 </Project>

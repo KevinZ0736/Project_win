@@ -936,6 +936,22 @@ bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, double* value)
 	return false;
 }
 
+bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, string& value)
+{
+	if (value.size() != 0) value.clear();    // 判断原值是否为空。
+
+	char strTemp[51];
+
+	memset(strTemp, 0, sizeof(strTemp));
+
+	if (GetXMLBuffer(xmlbuffer, fieldname, strTemp, 50) == true)
+	{
+		value.assign(strTemp); return true;
+	}
+
+	return false;
+}
+
 // 把整数表示的时间转换为字符串表示的时间。
 // ltime：整数表示的时间。
 // stime：字符串表示的时间。

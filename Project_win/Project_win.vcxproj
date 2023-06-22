@@ -35,6 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Database\ConnectionPool.h" />
     <ClInclude Include="Database\MysqlConn.h" />
     <ClInclude Include="lib\freecplus\ftplib.h" />
     <ClInclude Include="lib\freecplus\_cmpublic.h" />
@@ -43,6 +44,8 @@
     <ClInclude Include="lib\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Database\ConnectionPool.cpp" />
+    <ClCompile Include="Database\MysqlConn.cpp" />
     <ClCompile Include="lib\freecplus\ftplib.c" />
     <ClCompile Include="lib\freecplus\_ftp.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
@@ -50,6 +53,9 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="FTP\config.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Database\DBconfig.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{59d0b720-f65c-47ed-8802-5f9ff34fdc61}</ProjectGuid>
@@ -98,12 +104,17 @@
     <RemoteOutRelDir>$(RemoteProjectRelDir)/tool/bin/</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
     <TargetName>ftpgetfiles</TargetName>
+    <IncludePath>D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile />
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\project\idc1;D:\learn\C++\Program\Project_win\Project_win\project\freecplus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>libmysql.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

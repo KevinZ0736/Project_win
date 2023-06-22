@@ -174,6 +174,7 @@ bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, unsigned int* va
 bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, long* value);
 bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, unsigned long* value);
 bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, double* value);
+bool GetXMLBuffer(const char* xmlbuffer, const char* fieldname, string& value);
 ///////////////////////////////////// /////////////////////////////////////
 
 ///////////////////////////////////// /////////////////////////////////////
