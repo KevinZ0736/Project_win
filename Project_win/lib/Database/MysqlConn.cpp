@@ -47,6 +47,10 @@ bool MysqlConn::next()
 	if (m_result)
 	{
 		m_row = mysql_fetch_row(m_result);
+		if (m_row != nullptr)
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -79,6 +83,18 @@ bool MysqlConn::rollback()
 	return mysql_rollback(m_conn);
 }
 
+void MysqlConn::refreshAliveTime()
+{
+	m_alivetime = steady_clock::now();
+}
+
+long long MysqlConn::getAliveTime()
+{
+	nanoseconds res = steady_clock::now() - m_alivetime; //基本单位是纳秒
+	milliseconds millsec = duration_cast<milliseconds>(res);
+	return millsec.count();
+}
+
 void MysqlConn::freeResult()
 {
 	if (m_result)
@@ -87,5 +103,6 @@ void MysqlConn::freeResult()
 		m_result = nullptr;
 	}
 }
+
 
 

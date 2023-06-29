@@ -4,20 +4,27 @@
 #include<condition_variable>
 #include<fstream>
 #include<thread>
+#include<chrono>
 #include"_public.h"
-#include"MysqlConn.h"
+#include"_mysql.h"
 using namespace std;
+using namespace chrono;
 
 class ConnectionPool
 {
 public:
+	//建立一个数据库连接池
 	static ConnectionPool* getConnectPool();
+	//关闭拷贝构造
 	ConnectionPool(const ConnectionPool& obj) = delete;
 	ConnectionPool& operator=(const ConnectionPool& obj) = delete;
-
+	//取出一个数据库连接
+	shared_ptr<connection> getConnection();
+	~ConnectionPool();
 private:
 	ConnectionPool();
 	bool LoadConfig();
+	void addConnection(); //在连接队列中增加连接
 	void produceConnection();  //生产数据库连接
 	void recycleConnection();  //销毁数据库连接
 
@@ -31,9 +38,8 @@ private:
 	int m_timeout;  //超时机制
 	int m_maxIdleTime;  //最长空闲时间
 
-	queue<MysqlConn*> m_connectionQ; //用于存放连接的容器
+	queue<connection*> m_connectionQ; //用于存放连接的容器
 	mutex m_mutexQ;
 	condition_variable m_cond;
-	static CLogFile DBlogfile;
 };
 

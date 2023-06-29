@@ -12,8 +12,12 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
-
+#include<chrono>
+#include<string>
 #include <mysql.h>   // MySQL数据库接口函数的头文件
+
+using namespace std;
+using namespace chrono;
 
 // 把文件filename加载到buffer中，必须确保buffer足够大。
 // 成功返回文件的大小，文件不存在或为空返回0。  
@@ -23,15 +27,6 @@ unsigned long filetobuf(const char* filename, char* buffer);
 // 成功返回true，失败返回false。
 bool buftofile(const char* filename, char* buffer, unsigned long size);
 
-// MySQL登录环境
-struct LOGINENV
-{
-	char ip[32];       // MySQL数据库的ip地址。
-	int  port;         // MySQL数据库的通信端口。
-	char user[32];     // 登录MySQL数据库的用户名。
-	char pass[32];     // 登录MySQL数据库的密码。
-	char dbname[51];   // 登录后，缺省打开的数据库。
-};
 
 struct CDA_DEF         // 每次调用MySQL接口函数返回的结果。
 {
@@ -44,15 +39,14 @@ struct CDA_DEF         // 每次调用MySQL接口函数返回的结果。
 class connection
 {
 private:
-	// 从connstr中解析ip,username,password,dbname,port。
-	void setdbopt(const char* connstr);
 
 	// 设置字符集，要与数据库的一致，否则中文会出现乱码。
 	void character(const char* charset);
 
-	LOGINENV m_env;      // 服务器环境句柄。
-
 	char m_dbtype[21];   // 数据库种类，固定取值为"mysql"。
+
+	steady_clock::time_point m_alivetime;  //该连接的活跃时长
+
 public:
 	int m_state;         // 与数据库的连接状态，0-未连接，1-已连接。
 
@@ -69,7 +63,7 @@ public:
 	// charset：数据库的字符集，如"utf8"、"gbk"，必须与数据库保持一致，否则会出现中文乱码的情况。
 	// autocommitopt：是否启用自动提交，0-不启用，1-启用，缺省是不启用。
 	// 返回值：0-成功，其它失败，失败的代码在m_cda.rc中，失败的描述在m_cda.message中。
-	int connecttodb(const char* connstr, const char* charset, unsigned int autocommitopt = 0);
+	int connecttodb(string user, string passwd, string dbName, string ip, unsigned short port, const char* charset, unsigned int autocommitopt = 0);
 
 	// 提交事务。
 	// 返回值：0-成功，其它失败，程序中一般不必关心返回值。
@@ -93,6 +87,11 @@ public:
 	// 在connection类中提供了execute方法，是为了方便程序员，在该方法中，也是用sqlstatement类来完成功能。
 	int execute(const char* fmt, ...);
 
+	// 刷新起始的空闲时间点
+	void refreshAliveTime();
+	// 计算连接存活的总时长
+	long long getAliveTime();
+
 	////////////////////////////////////////////////////////////////////
 	// 以下成员变量和函数，除了sqlstatement类，在类的外部不需要调用它。
 	MYSQL* m_conn;   // MySQL数据库连接句柄。
@@ -112,7 +111,7 @@ private:
 
 	MYSQL_BIND params_in[MAXPARAMS];            // 输入参数。
 	unsigned long params_in_length[MAXPARAMS];  // 输入参数的实际长度。
-	bool params_in_is_null[MAXPARAMS];       // 输入参数是否为空。
+	my_bool params_in_is_null[MAXPARAMS];       // 输入参数是否为空。
 	unsigned maxbindin;                         // 输入参数最大的编号。
 
 	MYSQL_BIND params_out[MAXPARAMS]; // 输出参数。

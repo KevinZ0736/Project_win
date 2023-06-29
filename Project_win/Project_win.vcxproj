@@ -35,8 +35,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Database\ConnectionPool.h" />
-    <ClInclude Include="Database\MysqlConn.h" />
+    <ClInclude Include="lib\Database\ConnectionPool.h" />
+    <ClInclude Include="lib\Database\MysqlConn.h" />
     <ClInclude Include="lib\freecplus\ftplib.h" />
     <ClInclude Include="lib\freecplus\_cmpublic.h" />
     <ClInclude Include="lib\freecplus\_ftp.h" />
@@ -44,18 +44,19 @@
     <ClInclude Include="lib\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Database\ConnectionPool.cpp" />
-    <ClCompile Include="Database\MysqlConn.cpp" />
+    <ClCompile Include="lib\Database\ConnectionPool.cpp" />
+    <ClCompile Include="lib\Database\MysqlConn.cpp" />
     <ClCompile Include="lib\freecplus\ftplib.c" />
     <ClCompile Include="lib\freecplus\_ftp.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
     <ClCompile Include="lib\freecplus\_public.cpp" />
+    <ClCompile Include="tool\DataToDB.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="FTP\config.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="Database\DBconfig.xml" />
+    <Xml Include="lib\Database\DBconfig.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{59d0b720-f65c-47ed-8802-5f9ff34fdc61}</ProjectGuid>
@@ -84,6 +85,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <RemoteProjectRelDir>$(ProjectName)</RemoteProjectRelDir>
     <RemoteRootDir>/usr/project</RemoteRootDir>
+    <RemoteCopyIncludeDirectories>$(RemoteCopyIncludeDirectories)</RemoteCopyIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -100,20 +102,22 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <RemoteIntRelDir>$(RemoteProjectRelDir)/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
-    <RemoteOutRelDir>$(RemoteProjectRelDir)/tool/bin/</RemoteOutRelDir>
+    <RemoteIntRelDir>$(RemoteProjectRelDir)/tool/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
+    <RemoteOutRelDir>$(RemoteProjectRelDir)/tool/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
-    <TargetName>ftpgetfiles</TargetName>
+    <TargetName>test</TargetName>
     <IncludePath>D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile />
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/usr/include/mysql;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\lib\Database;D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libmysql.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>/usr/lib64/mysql;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>mysqlclient</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

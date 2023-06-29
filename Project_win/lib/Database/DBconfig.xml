@@ -5,8 +5,8 @@
 	<userName>root</userName>
 	<password>kevin</password>
 	<dbName>testdb</dbName>
-	<minSize>100</minSize>
-	<maxSize>1024</maxSize>
+	<minSize>20</minSize>
+	<maxSize>100</maxSize>
 	<maxIdleTime>5000</maxIdleTime>
 	<timeout>1000</timeout>
 </DBconfig>

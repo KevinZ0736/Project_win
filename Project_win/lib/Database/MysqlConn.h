@@ -1,7 +1,18 @@
 ﻿#pragma once
 #include<iostream>
 #include<mysql.h>
+#include<chrono>
 using namespace std;
+using namespace chrono;
+
+// 把文件filename加载到buffer中，必须确保buffer足够大。
+// 成功返回文件的大小，文件不存在或为空返回0。  
+unsigned long filetobuf(const char* filename, char* buffer);
+
+// 把buffer中的内容写入文件filename，size为buffer中有效内容的大小。
+// 成功返回true，失败返回false。
+bool buftofile(const char* filename, char* buffer, unsigned long size);
+
 
 class MysqlConn
 {
@@ -26,10 +37,18 @@ public:
 	bool commit();
 	// 事务回滚
 	bool rollback();
+	// 刷新起始的空闲时间点
+	void refreshAliveTime();
+	// 计算连接存活的总时长
+	long long getAliveTime();
+
 private:
 	MYSQL* m_conn = nullptr;
 	MYSQL_RES* m_result = nullptr;
 	MYSQL_ROW m_row = nullptr;
 
-	void freeResult();
+	void freeResult();//将SQL获得结果集，进行资源释放
+
+	steady_clock::time_point m_alivetime;
+
 };
