@@ -35,15 +35,30 @@ struct CDA_DEF         // 每次调用MySQL接口函数返回的结果。
 	char     message[2048]; // 如果返回失败，存放错误描述信息。
 };
 
+// MySQL登录环境
+struct LOGINENV
+{
+	char ip[32];       // MySQL数据库的ip地址。
+	int  port;         // MySQL数据库的通信端口。
+	char user[32];     // 登录MySQL数据库的用户名。
+	char pass[32];     // 登录MySQL数据库的密码。
+	char dbname[51];   // 登录后，缺省打开的数据库。
+};
+
 // MySQL数据库连接类。
 class connection
 {
 private:
 
+	// 从connstr中解析ip,username,password,dbname,port。
+	void setdbopt(const char* connstr);
+
 	// 设置字符集，要与数据库的一致，否则中文会出现乱码。
 	void character(const char* charset);
 
 	char m_dbtype[21];   // 数据库种类，固定取值为"mysql"。
+
+	LOGINENV m_env;      // 服务器环境句柄。
 
 	steady_clock::time_point m_alivetime;  //该连接的活跃时长
 
@@ -64,7 +79,7 @@ public:
 	// autocommitopt：是否启用自动提交，0-不启用，1-启用，缺省是不启用。
 	// 返回值：0-成功，其它失败，失败的代码在m_cda.rc中，失败的描述在m_cda.message中。
 	int connecttodb(string user, string passwd, string dbName, string ip, unsigned short port, const char* charset, unsigned int autocommitopt = 0);
-
+	int connecttodb(const char* connstr, const char* charset, unsigned int autocommitopt = 0);
 	// 提交事务。
 	// 返回值：0-成功，其它失败，程序中一般不必关心返回值。
 	int commit();

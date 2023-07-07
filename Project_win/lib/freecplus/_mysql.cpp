@@ -26,6 +26,98 @@ connection::~connection()
 	disconnect();
 }
 
+// 从connstr中解析username, password, tnsname
+// "120.77.115.3","szidc","SZmb1601","lxqx",3306
+void connection::setdbopt(const char* connstr)
+{
+	memset(&m_env, 0, sizeof(LOGINENV));
+
+	char* bpos, * epos;
+
+	bpos = epos = 0;
+
+	// ip
+	bpos = (char*)connstr;
+	epos = strstr(bpos, ",");
+	if (epos > 0)
+	{
+		strncpy(m_env.ip, bpos, epos - bpos);
+	}
+	else return;
+
+	// user
+	bpos = epos + 1;
+	epos = 0;
+	epos = strstr(bpos, ",");
+	if (epos > 0)
+	{
+		strncpy(m_env.user, bpos, epos - bpos);
+	}
+	else return;
+
+	// pass
+	bpos = epos + 1;
+	epos = 0;
+	epos = strstr(bpos, ",");
+	if (epos > 0)
+	{
+		strncpy(m_env.pass, bpos, epos - bpos);
+	}
+	else return;
+
+	// dbname
+	bpos = epos + 1;
+	epos = 0;
+	epos = strstr(bpos, ",");
+	if (epos > 0)
+	{
+		strncpy(m_env.dbname, bpos, epos - bpos);
+	}
+	else return;
+
+	// port
+	m_env.port = atoi(epos + 1);
+}
+
+int connection::connecttodb(const char* connstr, const char* charset, unsigned int autocommitopt)
+{
+	// 如果已连接上数据库，就不再连接。
+	// 所以，如果想重连数据库，必须显示的调用disconnect()方法后才能重连。
+	if (m_state == 1) return 0;
+
+	// 从connstr中解析username,password,tnsname
+	setdbopt(connstr);
+
+	memset(&m_cda, 0, sizeof(m_cda));
+
+	if ((m_conn = mysql_init(NULL)) == NULL)
+	{
+		m_cda.rc = -1; strncpy(m_cda.message, "initialize mysql failed.\n", 128); return -1;
+	}
+
+	if (mysql_real_connect(m_conn, m_env.ip, m_env.user, m_env.pass, m_env.dbname, m_env.port, NULL, 0) == NULL)
+	{
+		m_cda.rc = mysql_errno(m_conn); strncpy(m_cda.message, mysql_error(m_conn), 2000); mysql_close(m_conn); m_conn = NULL;  return -1;
+	}
+
+	// 设置事务模式，0-关闭自动提交，1-开启自动提交
+	m_autocommitopt = autocommitopt;
+
+	if (mysql_autocommit(m_conn, m_autocommitopt) != 0)
+	{
+		m_cda.rc = mysql_errno(m_conn); strncpy(m_cda.message, mysql_error(m_conn), 2000); mysql_close(m_conn); m_conn = NULL;  return -1;
+	}
+
+	// 设置字符集
+	character(charset);
+
+	m_state = 1;
+
+	// 设置事务隔离级别为read committed
+	execute("set session transaction isolation level read committed");
+
+	return 0;
+}
 
 int connection::connecttodb(string user, string passwd, string dbName, string ip, unsigned short port, const char* charset, unsigned int autocommitopt)
 {
