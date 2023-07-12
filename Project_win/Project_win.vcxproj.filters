@@ -16,6 +16,7 @@
     <ClInclude Include="lib\Database\MysqlConn.h" />
     <ClInclude Include="lib\Database\ConnectionPool.h" />
     <ClInclude Include="lib\freecplus\_mysql.h" />
+    <ClInclude Include="lib\Database\GetCols.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\freecplus\_ftp.cpp">
@@ -30,7 +31,8 @@
     <ClCompile Include="lib\Database\MysqlConn.cpp" />
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
-    <ClCompile Include="tool\DataToDB.cpp" />
+    <ClCompile Include="DBtool\DataToDB.cpp" />
+    <ClCompile Include="lib\Database\GetCols.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
