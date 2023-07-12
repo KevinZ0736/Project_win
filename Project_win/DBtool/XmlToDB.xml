@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DataToDB>
+	<inifilename>/usr/project/Project_win/data/ini/xmltodb.xml</inifilename>
+	<xmlpath>/usr/project/Project_win/data/ini</xmlpath>
+	<xmlpathbak>/usr/project/Project_win/data/successfile</xmlpathbak>
+	<xmlpatherr>/usr/project/Project_win/data/failfile</xmlpatherr>
+	<timetvl>5</timetvl>
+	<timeout>50</timeout>
+	<pname>XmlToDB</pname>
+</DataToDB>
