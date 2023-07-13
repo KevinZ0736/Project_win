@@ -19,7 +19,7 @@ struct st_stcode
 {
 	char provname[31]; // 省
 	char obtid[11];    // 站号
-	char obtname[31];  // 站名
+	char cityname[31];  // 站名
 	double lat;        // 纬度
 	double lon;        // 经度
 	double height;     // 海拔高度
@@ -53,6 +53,9 @@ void CrtSurfData();
 
 CFile File;  // 文件操作对象。
 
+// 把容器vstcode中的全国气象站点数据写入文件。
+bool CrtSTFile(const char* outpath, const char* datafmt);
+
 // 把容器vsurfdata中的全国气象站点分钟观测数据写入文件。
 bool CrtSurfFile(const char* outpath, const char* datafmt);
 
@@ -68,7 +71,7 @@ int main(int argc, char* argv[])
 		printf("Using:./crtsurfdata inifile outpath logfile datafmt [datetime]\n");
 		printf("Example:/project/idc1/bin/crtsurfdata /project/idc1/ini/stcode.ini /tmp/idc/surfdata /log/idc/crtsurfdata.log xml,json,csv\n");
 		printf("        /project/idc1/bin/crtsurfdata /project/idc1/ini/stcode.ini /tmp/idc/surfdata /log/idc/crtsurfdata.log xml,json,csv 20210710123000\n");
-		printf("        /project/tools1/bin/procctl 60 /project/idc1/bin/crtsurfdata /project/idc1/ini/stcode.ini /tmp/idc/surfdata /log/idc/crtsurfdata.log xml,json,csv\n\n\n");
+		printf("        ./procctl.out 60 /usr/project/Project_win/crtsurfdata/bin/x64/Debug/crtsurfdata.out /usr/project/Project_win/data/ini/stcode.ini /usr/project/Project_win/data/bin /usr/project/Project_win/log/crtsurfdata.log xml\n\n\n");
 
 		printf("inifile  全国气象站点参数文件名。\n");
 		printf("outpath  全国气象站点数据文件存放的目录。\n");
@@ -108,9 +111,9 @@ int main(int argc, char* argv[])
 	CrtSurfData();
 
 	// 把容器vsurfdata中的全国气象站点分钟观测数据写入文件。
-	if (strstr(argv[4], "xml") != 0) CrtSurfFile(argv[2], "xml");
-	if (strstr(argv[4], "json") != 0) CrtSurfFile(argv[2], "json");
-	if (strstr(argv[4], "csv") != 0) CrtSurfFile(argv[2], "csv");
+	if (strstr(argv[4], "xml") != 0) { CrtSTFile(argv[2], "xml"); CrtSurfFile(argv[2], "xml"); }
+	if (strstr(argv[4], "json") != 0) { CrtSTFile(argv[2], "json"); CrtSurfFile(argv[2], "json"); }
+	if (strstr(argv[4], "csv") != 0) { CrtSTFile(argv[2], "csv"); CrtSurfFile(argv[2], "csv"); }
 
 	logfile.Write("crtsurfdata 运行结束。\n");
 
@@ -146,7 +149,7 @@ bool LoadSTCode(const char* inifile)
 		memset(&stcode, 0, sizeof(struct st_stcode));
 		CmdStr.GetValue(0, stcode.provname, 30); // 省
 		CmdStr.GetValue(1, stcode.obtid, 10);    // 站号
-		CmdStr.GetValue(2, stcode.obtname, 30);  // 站名
+		CmdStr.GetValue(2, stcode.cityname, 30);  // 站名
 		CmdStr.GetValue(3, &stcode.lat);         // 纬度
 		CmdStr.GetValue(4, &stcode.lon);         // 经度
 		CmdStr.GetValue(5, &stcode.height);      // 海拔高度
@@ -157,13 +160,69 @@ bool LoadSTCode(const char* inifile)
 
 	/*
 	for (int ii=0;ii<vstcode.size();ii++)
-	  logfile.Write("provname=%s,obtid=%s,obtname=%s,lat=%.2f,lon=%.2f,height=%.2f\n",\
-					 vstcode[ii].provname,vstcode[ii].obtid,vstcode[ii].obtname,vstcode[ii].lat,\
+	  logfile.Write("provname=%s,obtid=%s,cityname=%s,lat=%.2f,lon=%.2f,height=%.2f\n",\
+					 vstcode[ii].provname,vstcode[ii].obtid,vstcode[ii].cityname,vstcode[ii].lat,\
 					 vstcode[ii].lon,vstcode[ii].height);
 	*/
 
 	return true;
 }
+
+// 把容器vstcode中的全国气象站点分钟观测数据写入文件。
+bool CrtSTFile(const char* outpath, const char* datafmt)
+{
+	// 拼接生成数据的文件名，例如：/tmp/idc/surfdata/ST_ZH_20210629092200_2254.csv
+	char strFileName[301];
+	sprintf(strFileName, "%s/ST_%s_%d.%s", outpath, strddatetime, getpid(), datafmt);
+
+	// 打开文件。
+	if (File.OpenForRename(strFileName, "w") == false)
+	{
+		logfile.Write("File.OpenForRename(%s) failed.\n", strFileName); return false;
+	}
+
+	if (strcmp(datafmt, "csv") == 0) File.Fprintf("省,站号,站名,纬度,经度,海拔高度\n");
+	if (strcmp(datafmt, "xml") == 0) File.Fprintf("<Station>\n");
+	if (strcmp(datafmt, "json") == 0) File.Fprintf("{\"station\":[\n");
+
+	// 遍历存放观测数据的vsurfdata容器。
+	for (int ii = 0; ii < vsurfdata.size(); ii++)
+	{
+		// 写入一条记录。 %s,%s,%s,%.2f,%.2f,%.2f 
+		if (strcmp(datafmt, "csv") == 0)
+			File.Fprintf("%s,%s,%s,%.2f,%.2f,%.2f\n", \
+				vstcode[ii].provname, vstcode[ii].obtid, vstcode[ii].cityname, vstcode[ii].lat, \
+				vstcode[ii].lon, vstcode[ii].height);
+
+		if (strcmp(datafmt, "xml") == 0)
+			File.Fprintf("<provname>%s</provname><obtid>%s</obtid><cityname>%s</cityname><lat>%.2f</lat>"\
+				"<lon>%.2f</lon><height>%.2f</height><endl/>\n", \
+				vstcode[ii].provname, vstcode[ii].obtid, vstcode[ii].cityname, vstcode[ii].lat, \
+				vstcode[ii].lon, vstcode[ii].height);
+
+		if (strcmp(datafmt, "json") == 0)
+		{
+			File.Fprintf("{\"provname\":\"%s\",\"obtid\":\"%s\",\"cityname\":\"%s\",\"lat\":\"%.2f\","\
+				"\"lon\":\"%.2f\",\"height\":\"%.2f\"}", \
+				vstcode[ii].provname, vstcode[ii].obtid, vstcode[ii].cityname, vstcode[ii].lat, \
+				vstcode[ii].lon, vstcode[ii].height);
+
+			if (ii < vstcode.size() - 1) File.Fprintf(",\n");
+			else   File.Fprintf("\n");
+		}
+	}
+
+	if (strcmp(datafmt, "xml") == 0) File.Fprintf("</Station>\n");
+	if (strcmp(datafmt, "json") == 0) File.Fprintf("]}\n");
+
+	// 关闭文件。
+	File.CloseAndRename();
+
+	logfile.Write("生成站点数据文件%s成功，数据时间%s，记录数%d。\n", strFileName, strddatetime, vstcode.size());
+
+	return true;
+}
+
 
 // 模拟生成全国气象站点分钟观测数据，存放在vsurfdata容器中。
 void CrtSurfData()

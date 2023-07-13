@@ -23,13 +23,11 @@ ConnectionPool::ConnectionPool()
 
 ConnectionPool::~ConnectionPool()
 {
-	int i = 0;
 	while (!m_connectionQ.empty())
 	{
 		connection* conn = m_connectionQ.front();
 		m_connectionQ.pop();
 		delete conn;
-		cout << ++i << endl;
 	}
 }
 
@@ -55,6 +53,14 @@ shared_ptr<connection> ConnectionPool::getConnection()
 	//采用shared_ptr智能指针，自己编写删除函数，实现在指针周期结束时，并不释放资源，而是更新连接时间，重新放入到池子中
 	shared_ptr<connection> connptr(m_connectionQ.front(), [this](connection* conn) {
 		lock_guard<mutex> locker(m_mutexQ);
+		if (conn->m_cda.rc == 0)
+		{
+			conn->commit();
+		}
+		else {
+			conn->rollback();
+		}
+		cout << "11" << endl;
 		conn->refreshAliveTime();
 		m_connectionQ.push(conn);
 		});

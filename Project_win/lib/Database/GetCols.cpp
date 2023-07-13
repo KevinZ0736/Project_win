@@ -7,14 +7,14 @@ GetCols::GetCols()
 
 void GetCols::initdata(int mod)
 {
-	if (mod == 0 && mod == 1)
+	if (mod == 0 || mod == 1)
 	{
 		m_allcount = 0;
 		m_maxcollen = 0;
 		m_vallcols.clear();
 		m_allcols.clear();
 	}
-	if (mod == 0 && mod == 2)
+	if (mod == 0 || mod == 2)
 	{
 		m_pkcount = 0;
 		m_pkcols.clear();
@@ -93,7 +93,6 @@ bool GetCols::allcols(shared_ptr<connection> conn, char* tablename)
 bool GetCols::pkcols(shared_ptr<connection> conn, char* tablename)
 {
 	initdata(2);
-
 	struct st_columns pk_columns;  //主键字段
 
 	sqlstatement stmt;
@@ -125,7 +124,7 @@ bool GetCols::pkcols(shared_ptr<connection> conn, char* tablename)
 
 bool GetCols::bindseq()
 {
-	if (m_vallcols.size() || m_vpkcols.size())
+	if (m_vallcols.empty() || m_vpkcols.empty())
 		return false;
 	int flag = 0;
 
@@ -138,7 +137,7 @@ bool GetCols::bindseq()
 				flag = 1;
 				break;
 			}
-	if (!flag)
+	if (flag == 0)
 		return false;
 	else
 		return true;

@@ -45,7 +45,7 @@
     <ClInclude Include="lib\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="crtsurfdata\crtsurfdata.cpp" />
+    <ClCompile Include="DBtool\DataToDB.cpp" />
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
     <ClCompile Include="lib\Database\MysqlConn.cpp" />
@@ -58,6 +58,7 @@
     <Text Include="FTP\config.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Xml Include="DBtool\DTD_conf.xml" />
     <Xml Include="DBtool\XmlToDB.xml" />
     <Xml Include="lib\Database\DBconfig.xml" />
   </ItemGroup>
@@ -105,10 +106,10 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <RemoteIntRelDir>$(RemoteProjectRelDir)/crtsurfdata/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
-    <RemoteOutRelDir>$(RemoteProjectRelDir)/crtsurfdata/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
+    <RemoteIntRelDir>$(RemoteProjectRelDir)/DBtool/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
+    <RemoteOutRelDir>$(RemoteProjectRelDir)/DBtool/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
-    <TargetName>crtsurfdata</TargetName>
+    <TargetName>DataToDB</TargetName>
     <IncludePath>D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
   </PropertyGroup>

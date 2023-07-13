@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<DataToDB>
-	<inifilename>/usr/project/Project_win/data/ini/xmltodb.xml</inifilename>
-	<xmlpath>/usr/project/Project_win/data/ini</xmlpath>
-	<xmlpathbak>/usr/project/Project_win/data/successfile</xmlpathbak>
-	<xmlpatherr>/usr/project/Project_win/data/failfile</xmlpatherr>
-	<timetvl>5</timetvl>
-	<timeout>50</timeout>
-	<pname>XmlToDB</pname>
-</DataToDB>
+<!--该参数文件存放了数据中心入库参数。-->
+
+<xmltodb>
+	<filename>ST_*.xml</filename>
+	<tname>DataCenter</tname>
+	<uptbz>1</uptbz>
+	<execsql>delete from DataCenter</execsql>
+	<endl/>
+	<filename>SURF_*.xml</filename>
+	<tname>Observe_Data</tname>
+	<uptbz>2</uptbz>
+	<endl/>
+</xmltodb>

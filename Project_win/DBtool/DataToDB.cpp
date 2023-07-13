@@ -46,7 +46,7 @@ bool FindXmlToTable(char* xmlfilename);
 // 处理xml文件的子函数，返回值：0-成功，其它的都是失败，失败的情况有很多种，暂时不确定。
 int totalcount, inscount, uptcount;    // xml文件的总记录数、插入记录数和更新记录数。
 
-int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection> conn);
+int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection>& conn);
 
 // 把xml文件移动到备份目录或错误目录。
 bool XmlToBakerr(char* fullfilename, char* srcpath, char* dstpath);
@@ -63,10 +63,10 @@ void CrtSql();
 #define MAXCOLCOUNT  500          // 每个表字段的最大数，也可以用MAXPARAMS宏（在_mysql.h中定义）。
 char* strcolvalue[MAXCOLCOUNT];   // 存放从xml每一行中解析出来的值。
 sqlstatement stmtins, stmtupt;     // 插入和更新表的sqlstatement对象。
-void PrepareSql(shared_ptr<connection> conn);
+void PrepareSql(shared_ptr<connection>& conn);
 
 // 在处理xml文件之前，如果XmlToTable.execsql不为空，就执行它。
-bool ExecSql(shared_ptr<connection> conn);
+bool ExecSql(shared_ptr<connection>& conn);
 
 // 解析xml，存放在已绑定的输入变量strcolvalue数组中。
 void SplitBuffer(char* strBuffer);
@@ -100,7 +100,7 @@ void _help(char* argv[])
 {
 	printf("Using:/project/tools1/bin/xmltodb logfilename xmlbuffer\n\n");
 
-	printf("Sample:/project/tools1/bin/procctl 10 /project/tools1/bin/xmltodb /log/idc/xmltodb_vip1.log \"<connstr>127.0.0.1,root,mysqlpwd,mysql,3306</connstr><charset>utf8</charset><inifilename>/project/idc1/ini/xmltodb.xml</inifilename><xmlpath>/idcdata/xmltodb/vip1</xmlpath><xmlpathbak>/idcdata/xmltodb/vip1bak</xmlpathbak><xmlpatherr>/idcdata/xmltodb/vip1err</xmlpatherr><timetvl>5</timetvl><timeout>50</timeout><pname>xmltodb_vip1</pname>\"\n\n");
+	printf("Sample:/project/tools1/bin/procctl 10 /usr/project/Project_win/DBtool/bin/x64/Debug/DataToDB.out /usr/project/Project_win/log/xmltodb.log /usr/project/Project_win/DBtool/DTD_conf.xml\"<connstr>127.0.0.1,root,mysqlpwd,mysql,3306</connstr><charset>utf8</charset><inifilename>/project/idc1/ini/xmltodb.xml</inifilename><xmlpath>/idcdata/xmltodb/vip1</xmlpath><xmlpathbak>/idcdata/xmltodb/vip1bak</xmlpathbak><xmlpatherr>/idcdata/xmltodb/vip1err</xmlpatherr><timetvl>5</timetvl><timeout>50</timeout><pname>xmltodb_vip1</pname>\"\n\n");
 
 	printf("本程序是数据中心的公共功能模块，用于把xml文件入库到MySQL的表中。\n");
 	printf("logfilename   本程序运行的日志文件。\n");
@@ -114,7 +114,8 @@ void _help(char* argv[])
 	printf("timeout     本程序的超时时间，单位：秒，视xml文件大小而定，建议设置30以上。\n");
 	printf("pname       进程名，尽可能采用易懂的、与其它进程不同的名称，方便故障排查。\n\n");
 }
-bool LoadConfig(const char* local)
+
+bool LoadConfig(char* local)
 {
 	ifstream Conf;
 	Conf.open(local, ios::in);
@@ -180,17 +181,18 @@ bool XmlToDB()
 		}
 
 		// 打开starg.xmlpath目录，为了保证先生成的数据入库，打开目录的时候，应该按文件名排序。
-		if (Dir.OpenDir(starg.xmlpath, "*.XML", 10000, false, true) == false)
+		if (Dir.OpenDir(starg.xmlpath, "*.xml", 10000, false, true) == false)
 		{
 			logfile.Write("Dir.OpenDir(%s) failed.\n", starg.xmlpath); return false;
 		}
+
+		shared_ptr<connection> conn = pool->getConnection();
 
 		while (true)
 		{
 			// 读取目录，得到一个xml文件。
 			if (Dir.ReadDir() == false) break;
 
-			shared_ptr<connection> conn = pool->getConnection();
 
 			// 判断连接数据库是否成功
 			if (conn.get()->m_state == 0)
@@ -199,12 +201,14 @@ bool XmlToDB()
 			}
 			logfile.Write("connect database ok.\n");
 
-			logfile.Write("处理文件%s...", Dir.m_FullFileName);
+			logfile.Write("处理文件%s...\n", Dir.m_FullFileName);
 
 			// 调用处理xml文件的子函数。
 			int iret = _xmltodb(Dir.m_FullFileName, Dir.m_FileName, conn);
 
 			PActive.UptATime();
+
+			conn.get()->commit();
 
 			// 处理xml文件成功，写日志，备份文件。
 			if (iret == 0)
@@ -255,7 +259,7 @@ bool XmlToDB()
 }
 
 // 处理xml文件的子函数，返回值：0-成功，其它的都是失败，失败的情况有很多种，暂时不确定。
-int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection> conn)
+int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection>& conn)
 {
 	totalcount = inscount = uptcount = 0;
 
@@ -288,7 +292,7 @@ int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection> conn)
 	PrepareSql(conn);
 
 	// 在处理xml文件之前，如果XmlToTable.execsql不为空，就执行它。
-	if (ExecSql(conn) == false) return 6;
+	//if (ExecSql(conn) == false) return 6;
 
 	// 打开xml文件。
 	CFile File;
@@ -340,8 +344,6 @@ int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection> conn)
 		}
 		else inscount++;
 	}
-
-	conn.get()->commit();
 
 	return 0;
 }
@@ -517,7 +519,7 @@ void CrtSql()
 	// logfile.Write("strupdatesql=%s\n",strupdatesql);
 }
 
-void PrepareSql(shared_ptr<connection> conn)
+void PrepareSql(shared_ptr<connection>& conn)
 {
 	// 绑定插入sql语句的输入变量。
 	stmtins.connect(conn.get());
@@ -578,7 +580,7 @@ void PrepareSql(shared_ptr<connection> conn)
 
 
 // 在处理xml文件之前，如果XmlToTable.execsql不为空，就执行它。
-bool ExecSql(shared_ptr<connection> conn)
+bool ExecSql(shared_ptr<connection>& conn)
 {
 	if (strlen(XmlToTable.execsql) == 0) return true;
 
