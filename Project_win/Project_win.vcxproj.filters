@@ -32,7 +32,7 @@
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
-    <ClCompile Include="DBtool\DataToDB.cpp" />
+    <ClCompile Include="DBtool\DBToLocal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
@@ -47,7 +47,8 @@
   </ItemGroup>
   <ItemGroup>
     <Xml Include="lib\Database\DBconfig.xml" />
-    <Xml Include="DBtool\DTD_conf.xml" />
+    <Xml Include="DBtool\DataToDB_conf.xml" />
     <Xml Include="DBtool\XmlToDB.xml" />
+    <Xml Include="DBtool\DBToLocal_conf.xml" />
   </ItemGroup>
 </Project>

@@ -271,8 +271,8 @@ int _xmltodb(char* fullfilename, char* filename, shared_ptr<connection>& conn)
 
 	// 获取表全部的字段和主键信息，如果获取失败，应该是数据库连接已失效。
 	// 在本程序运行的过程中，如果数据库出现异常，一定会在这里发现。
-	if (GC.allcols(conn, XmlToTable.tname) == false) return 4;
-	if (GC.pkcols(conn, XmlToTable.tname) == false)  return 4;
+	if (GC.allcols(conn.get(), XmlToTable.tname) == false) return 4;
+	if (GC.pkcols(conn.get(), XmlToTable.tname) == false)  return 4;
 
 	// 如果GC.m_allcount为0，说明表根本不存在，返回2。
 	if (GC.m_allcount == 0) return 2; // 待入库的表不存在。

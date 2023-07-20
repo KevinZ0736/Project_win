@@ -45,7 +45,7 @@
     <ClInclude Include="lib\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DBtool\DataToDB.cpp" />
+    <ClCompile Include="DBtool\DBToLocal.cpp" />
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
     <ClCompile Include="lib\Database\MysqlConn.cpp" />
@@ -58,7 +58,8 @@
     <Text Include="FTP\config.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="DBtool\DTD_conf.xml" />
+    <Xml Include="DBtool\DataToDB_conf.xml" />
+    <Xml Include="DBtool\DBToLocal_conf.xml" />
     <Xml Include="DBtool\XmlToDB.xml" />
     <Xml Include="lib\Database\DBconfig.xml" />
   </ItemGroup>

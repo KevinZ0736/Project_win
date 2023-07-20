@@ -60,7 +60,6 @@ shared_ptr<connection> ConnectionPool::getConnection()
 		else {
 			conn->rollback();
 		}
-		cout << "11" << endl;
 		conn->refreshAliveTime();
 		m_connectionQ.push(conn);
 		});

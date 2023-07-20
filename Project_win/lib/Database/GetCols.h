@@ -31,10 +31,10 @@ public:
 	void initdata(int mod); // 成员变量初始化
 
 	//获取指定表的全部字段信息
-	bool allcols(shared_ptr<connection> conn, char* tablename);
+	bool allcols(connection* conn, char* tablename);
 
 	//获取指定表的主键字段信息
-	bool pkcols(shared_ptr<connection> conn, char* tablename);
+	bool pkcols(connection* conn, char* tablename);
 
 	//将主键字段seq信息与字段容器seq绑定,需要在allcols,pkcols操作之后
 	bool bindseq();

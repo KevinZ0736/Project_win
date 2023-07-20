@@ -1,12 +1,15 @@
 ﻿#include "_public.h"
 #include "_mysql.h"
+#include "GetCols.h"
+#include <memory>
 
 //程序运行参数的结构体
 struct st_arg
 {
 	char connstr[101];     // 数据库的连接参数。
 	char charset[51];      // 数据库的字符集。
-	char selectsql[1024];  // 从数据源数据库抽取数据的SQL语句。
+	char tname[501];       // 需要抽取数据的表名
+	char wheresql[1001];    // 存放select的条件where
 	char fieldstr[501];    // 抽取数据的SQL语句输出结果集字段名，字段名之间用逗号分隔。
 	char fieldlen[501];    // 抽取数据的SQL语句输出结果集字段的长度，用逗号分隔。
 	char bfilename[31];    // 输出xml文件的前缀。
@@ -22,20 +25,32 @@ struct st_arg
 
 } starg;
 
-#define MAXFIELDCOUNT  100  // 结果集字段的最大个数。
-int MAXFIELDLEN = -1;       // 结果集字段值的最大长度，存放fieldlen数组中元素的最大值。
 
-char strfieldname[MAXFIELDCOUNT][31];      //结果集字段名数组，从starg.fieldstr解析得到
-int ifieldlen[MAXFIELDCOUNT];              // 结果集字段的长度数组，从starg.fieldlen解析得到。
-int  ifieldcount;                          // strfieldname和ifieldlen数组中有效字段的个数。
+int  ifieldcount;                          // 记录查询结果的有效字段的个数。
 int  incfieldpos = -1;                     // 递增字段在结果集数组中的位置。
 
-connection conn,conn1;
+string SelectSql;  //查找语句
+// prepare查找的sql语句，绑定输入变量。
+#define MAXCOLCOUNT  500          // 每个表字段的最大数，也可以用MAXPARAMS宏（在_mysql.h中定义）。
+
+sqlstatement stmtsel;     // 插入和更新表的sqlstatement对象。
+void CrtSql(string& table); //构造Select语句
+
+GetCols GC;   // 获取表全部的字段和主键字段。
+
+connection conn, conn1;
 
 CLogFile logfile;
 
+// 解析需要数据抽取的表名，并放入Cmd对象的容器中；
+CCmdStr CmdTable;
+
 // 程序退出和信号2、15的处理函数。
 void EXIT(int sig);
+
+// 存放Select的结果集
+vector<char*> fieldname;
+vector<unique_ptr<char[]>> fieldstr;
 
 void _help();
 
@@ -46,12 +61,14 @@ bool LoadConfig(char* strxmlbuffer);
 bool instarttime();
 
 // 数据抽取的主函数。
-bool _dminingmysql();
+bool _dminingmysql(string& table);
 
 CPActive PActive;  // 进程心跳。
 
 char strxmlfilename[301]; // xml文件名。
 void crtxmlfilename();    // 生成xml文件名。
+
+bool getcolumn(string& table);     //
 
 long imaxincvalue;    // 自增字段的最大值。
 bool readincfile();   // 从starg.incfilename文件中获取已抽取数据的最大id。
@@ -103,10 +120,126 @@ int main(int argc, char* argv[])
 		logfile.Write("connect database(%s) ok.\n", starg.connstr1);
 	}
 
-	_dminingmysql();
+	// 从存放需抽取表的容器中，取出一个需要抽取数据的表
+	for (string x : CmdTable.m_vCmdStr)
+	{
+		_dminingmysql(x);
+	}
+
 
 	return 0;
 
+}
+
+// 数据抽取的主函数。
+bool _dminingmysql(string& table)
+{
+	// 清理结果集数量
+	ifieldcount = 0;
+
+	// 从表中读取所需要的字段名
+	if (!getcolumn(table)) return false;
+
+	// 从数据库表中或starg.incfilename文件中获取已抽取数据的最大id。
+	readincfield();
+
+	sqlstatement stmt(&conn);
+
+	stmt.prepare(SelectSql.c_str());
+
+	char* strfieldvalue[ifieldcount];  // 抽取数据的SQL执行后，存放结果集字段值的数组。
+
+	//绑定结果集
+	int ii = 1;
+	for (auto& x : fieldstr)
+	{
+		stmt.bindout(ii++, x.get(), strlen(x.get()));
+	}
+
+	// 如果是增量抽取，绑定输入参数（已抽取数据的最大id）。
+	if (strlen(starg.incfield) != 0) stmt.bindin(1, &imaxincvalue);
+
+	if (stmt.execute() != 0)
+	{
+		logfile.Write("stmt.execute() failed.\n%s\n%s\n", stmt.m_sql, stmt.m_cda.message); return false;
+	}
+
+	PActive.UptATime();
+
+	CFile File;   // 用于操作xml文件。
+
+	while (true)
+	{
+		/*memset 是一个 C 标准库函数，用于将指定内存块的内容全部设置为特定的值。
+			但是，memset 不能用于复杂类型的对象（例如容器对象 std::vector）。*/
+		for (auto& x : fieldstr)
+			memset(x.get(), 0, sizeof(x.get()));
+
+		if (stmt.next() != 0) break;
+
+		if (File.IsOpened() == false)
+		{
+			crtxmlfilename();   // 生成xml文件名。
+
+			if (File.OpenForRename(strxmlfilename, "w+") == false)
+			{
+				logfile.Write("File.OpenForRename(%s) failed.\n", strxmlfilename); return false;
+			}
+
+			File.Fprintf("<data>\n");
+		}
+
+		for (int ii = 1; ii <= ifieldcount; ii++)
+			File.Fprintf("<%s>%s</%s>", fieldname[ii - 1], fieldstr[ii - 1], fieldname[ii - 1]);
+
+		File.Fprintf("<endl/>\n");
+
+		// 如果记录数达到starg.maxcount行就切换一个xml文件。
+		if ((starg.maxcount > 0) && (stmt.m_cda.rpc % starg.maxcount == 0))
+		{
+			File.Fprintf("</data>\n");
+
+			if (File.CloseAndRename() == false)
+			{
+				logfile.Write("File.CloseAndRename(%s) failed.\n", strxmlfilename); return false;
+			}
+
+			logfile.Write("生成文件%s(%d)。\n", strxmlfilename, starg.maxcount);
+
+			PActive.UptATime();
+		}
+
+		// 更新自增字段的最大值。
+		if ((strlen(starg.incfield) != 0) && (imaxincvalue < atol(strfieldvalue[incfieldpos])))
+			imaxincvalue = atol(strfieldvalue[incfieldpos]);
+	}
+
+	if (File.IsOpened() == true)
+	{
+		File.Fprintf("</data>\n");
+
+		if (File.CloseAndRename() == false)
+		{
+			logfile.Write("File.CloseAndRename(%s) failed.\n", strxmlfilename); return false;
+		}
+
+		if (starg.maxcount == 0)
+			logfile.Write("生成文件%s(%d)。\n", strxmlfilename, stmt.m_cda.rpc);
+		else
+			logfile.Write("生成文件%s(%d)。\n", strxmlfilename, stmt.m_cda.rpc % starg.maxcount);
+	}
+
+	// 把已抽取数据的最大id写入数据库表或starg.incfilename文件。
+	if (stmt.m_cda.rpc > 0) writeincfield();
+
+	//清理结果集容器
+	for (auto& x : fieldstr)
+	{
+		x.reset();
+	}
+	fieldstr.clear();
+
+	return true;
 }
 
 void _help()
@@ -141,12 +274,28 @@ void _help()
 void EXIT(int sig)
 {
 	printf("程序退出，sig=%d\n\n", sig);
-
+	for (auto& x : fieldstr)
+	{
+		x.reset();
+	}
 	exit(0);
 }
 
-bool LoadConfig(char* strxmlbuffer)
+bool LoadConfig(const char* local)
 {
+	ifstream Conf;
+	Conf.open(local, ios::in);
+	if (Conf.is_open() == false)
+	{
+		return false;
+	}
+	string buffer, config;
+	while (getline(Conf, buffer))
+	{
+		config = config + buffer;
+	}
+	const char* strxmlbuffer = config.c_str();
+
 	memset(&starg, 0, sizeof(struct st_arg));
 
 	GetXMLBuffer(strxmlbuffer, "connstr", starg.connstr, 100);
@@ -155,8 +304,11 @@ bool LoadConfig(char* strxmlbuffer)
 	GetXMLBuffer(strxmlbuffer, "charset", starg.charset, 50);
 	if (strlen(starg.charset) == 0) { logfile.Write("charset is null.\n"); return false; }
 
-	GetXMLBuffer(strxmlbuffer, "selectsql", starg.selectsql, 1000);
-	if (strlen(starg.selectsql) == 0) { logfile.Write("selectsql is null.\n"); return false; }
+	GetXMLBuffer(strxmlbuffer, "wheresql", starg.wheresql, 1000);
+	if (strlen(starg.wheresql) == 0) { logfile.Write("wheresql is null.\n"); return false; }
+
+	GetXMLBuffer(strxmlbuffer, "tname", starg.tname, 500);
+	if (strlen(starg.tname) == 0) { logfile.Write("tname is null.\n"); return false; }
 
 	GetXMLBuffer(strxmlbuffer, "fieldstr", starg.fieldstr, 500);
 	if (strlen(starg.fieldstr) == 0) { logfile.Write("fieldstr is null.\n"); return false; }
@@ -185,58 +337,14 @@ bool LoadConfig(char* strxmlbuffer)
 	GetXMLBuffer(strxmlbuffer, "pname", starg.pname, 50);     // 进程名。
 	if (strlen(starg.pname) == 0) { logfile.Write("pname is null.\n");  return false; }
 
-	// 1、把starg.fieldlen解析到ifieldlen数组中；
-	CCmdStr CmdStr;
+	// 把starg.tname解析到ifieldlen数组中；
+	CmdTable.SplitToCmd(starg.tname, ",");
 
-	// 1、把starg.fieldlen解析到ifieldlen数组中；
-	CmdStr.SplitToCmd(starg.fieldlen, ",");
-
-	// 判断字段数是否超出MAXFIELDCOUNT的限制。
-	if (CmdStr.CmdCount() > MAXFIELDCOUNT)
+	if (CmdTable.CmdCount() == 0)
 	{
-		logfile.Write("fieldlen的字段数太多，超出了最大限制%d。\n", MAXFIELDCOUNT); return false;
+		logfile.Write("读取表名失败\n"); return false;
 	}
 
-	for (int ii = 0; ii < CmdStr.CmdCount(); ii++)
-	{
-		CmdStr.GetValue(ii, &ifieldlen[ii]);
-		// if (ifieldlen[ii]>MAXFIELDLEN) ifieldlen[ii]=MAXFIELDLEN;   // 字段的长度不能超过MAXFIELDLEN。
-		if (ifieldlen[ii] > MAXFIELDLEN) MAXFIELDLEN = ifieldlen[ii];   // 得到字段长度的最大值。
-	}
-
-	ifieldcount = CmdStr.CmdCount();
-
-	// 2、把starg.fieldstr解析到strfieldname数组中；
-	CmdStr.SplitToCmd(starg.fieldstr, ",");
-
-	// 判断字段数是否超出MAXFIELDCOUNT的限制。
-	if (CmdStr.CmdCount() > MAXFIELDCOUNT)
-	{
-		logfile.Write("fieldstr的字段数太多，超出了最大限制%d。\n", MAXFIELDCOUNT); return false;
-	}
-
-	for (int ii = 0; ii < CmdStr.CmdCount(); ii++)
-	{
-		CmdStr.GetValue(ii, strfieldname[ii], 30);
-	}
-
-	// 判断strfieldname和ifieldlen两个数组中的字段是否一致。
-	if (ifieldcount != CmdStr.CmdCount())
-	{
-		logfile.Write("fieldstr和fieldlen的元素数量不一致。\n"); return false;
-	}
-
-	// 3、获取自增字段在结果集中的位置。
-	if (strlen(starg.incfield) != 0)
-	{
-		for (int ii = 0; ii < ifieldcount; ii++)
-			if (strcmp(starg.incfield, strfieldname[ii]) == 0) { incfieldpos = ii; break; }
-
-		if (incfieldpos == -1)
-		{
-			logfile.Write("递增字段名%s不在列表%s中。\n", starg.incfield, starg.fieldstr); return false;
-		}
-	}
 	return true;
 }
 
@@ -264,6 +372,34 @@ void crtxmlfilename()   // 生成xml文件名。
 
 	static int iseq = 1;
 	SNPRINTF(strxmlfilename, 300, sizeof(strxmlfilename), "%s/%s_%s_%s_%d.xml", starg.outpath, starg.bfilename, strLocalTime, starg.efilename, iseq++);
+}
+
+bool getcolumn(string& table)
+{
+	// 将存储表字段的对象初始化
+	GC.initdata(0);
+
+	// 读取表的字段
+	if (GC.allcols(&conn1, &table[0]) == false) { logfile.Write("读取表字段时，数据库发生错误！\n"); return false; }
+
+	// 如果GC.m_allcount为0，说明表根本不存在，返回2。
+	if ((GC.m_allcount == 0) || (GC.m_allcount > MAXCOLCOUNT)) { logfile.Write("%s表不存在或字段数超出限制！\n", table); return false; } // 待入库的表不存在。
+
+	// 拼接Select的语句
+	CrtSql(table);
+
+	// 获取自增字段在结果集中的位置。
+	if (strlen(starg.incfield) != 0)
+	{
+		for (int ii = 0; ii < GC.m_allcount; ii++)
+			if (strcmp(starg.incfield, GC.m_vallcols[ii].colname) == 0) { incfieldpos = ii; break; }
+
+		if (incfieldpos == -1)
+		{
+			logfile.Write("递增字段名%s不在列表%s中。\n", starg.incfield, table); return false;
+		}
+	}
+	return true;
 }
 
 // 从数据库表中或starg.incfilename文件中获取已抽取数据的最大id。
@@ -356,92 +492,43 @@ bool writeincfield()
 	return true;
 }
 
-// 数据抽取的主函数。
-bool _dminingmysql()
+void CrtSql(string& table)
 {
-	// 从数据库表中或starg.incfilename文件中获取已抽取数据的最大id。
-	readincfield();
 
-	sqlstatement stmt(&conn);
-	stmt.prepare(starg.selectsql);
-	char strfieldvalue[ifieldcount][MAXFIELDLEN + 1];  // 抽取数据的SQL执行后，存放结果集字段值的数组。
-	for (int ii = 1; ii <= ifieldcount; ii++)
+	SelectSql.clear();   // 插入表的SQL语句
+
+	// 生成插入表的SQL语句。 
+	//select obtid,date_format(ddatetime,'%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s'),t,p,u,wd,wf,r,vis,keyid from T_ZHOBTMIND where keyid>:1 and ddatetime>timestampadd(minute,-120,now())
+	//select obtid,cityname,provname,lat,lon,height from T_ZHOBTCODE
+	string strselectp1;     // select语句的字段列表。
+
+	strselectp1.clear();
+
+	char strtemp[101];
+	// 轮流处理各个字段
+	for (auto x : GC.m_vallcols)
 	{
-		stmt.bindout(ii, strfieldvalue[ii - 1], ifieldlen[ii - 1]);
-	}
+		// upttime和keyid这两个字段不需要处理。
+		if (strcmp(x.colname, "upttime") == 0) continue;
+		// 拼接strselectp1，需要区分date字段和非date字段。
 
-	// 如果是增量抽取，绑定输入参数（已抽取数据的最大id）。
-	if (strlen(starg.incfield) != 0) stmt.bindin(1, &imaxincvalue);
+		fieldname.push_back(x.colname);
+		fieldstr.push_back(unique_ptr<char[]>(new char[x.collen + 1]));
 
-	if (stmt.execute() != 0)
-	{
-		logfile.Write("stmt.execute() failed.\n%s\n%s\n", stmt.m_sql, stmt.m_cda.message); return false;
-	}
-
-	PActive.UptATime();
-
-	CFile File;   // 用于操作xml文件。
-
-	while (true)
-	{
-		memset(strfieldvalue, 0, sizeof(strfieldvalue));
-
-		if (stmt.next() != 0) break;
-
-		if (File.IsOpened() == false)
+		if (strcmp(x.datatype, "date") != 0)
 		{
-			crtxmlfilename();   // 生成xml文件名。
-
-			if (File.OpenForRename(strxmlfilename, "w+") == false)
-			{
-				logfile.Write("File.OpenForRename(%s) failed.\n", strxmlfilename); return false;
-			}
-
-			File.Fprintf("<data>\n");
+			SNPRINTF(strtemp, 100, sizeof(strtemp), "date_format(%s,'%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')", x.colname);
+			strselectp1 += strtemp;  strselectp1 += ",";
 		}
-
-		for (int ii = 1; ii <= ifieldcount; ii++)
-			File.Fprintf("<%s>%s</%s>", strfieldname[ii - 1], strfieldvalue[ii - 1], strfieldname[ii - 1]);
-
-		File.Fprintf("<endl/>\n");
-
-		// 如果记录数达到starg.maxcount行就切换一个xml文件。
-		if ((starg.maxcount > 0) && (stmt.m_cda.rpc % starg.maxcount == 0))
-		{
-			File.Fprintf("</data>\n");
-
-			if (File.CloseAndRename() == false)
-			{
-				logfile.Write("File.CloseAndRename(%s) failed.\n", strxmlfilename); return false;
-			}
-
-			logfile.Write("生成文件%s(%d)。\n", strxmlfilename, starg.maxcount);
-
-			PActive.UptATime();
-		}
-
-		// 更新自增字段的最大值。
-		if ((strlen(starg.incfield) != 0) && (imaxincvalue < atol(strfieldvalue[incfieldpos])))
-			imaxincvalue = atol(strfieldvalue[incfieldpos]);
-	}
-
-	if (File.IsOpened() == true)
-	{
-		File.Fprintf("</data>\n");
-
-		if (File.CloseAndRename() == false)
-		{
-			logfile.Write("File.CloseAndRename(%s) failed.\n", strxmlfilename); return false;
-		}
-
-		if (starg.maxcount == 0)
-			logfile.Write("生成文件%s(%d)。\n", strxmlfilename, stmt.m_cda.rpc);
 		else
-			logfile.Write("生成文件%s(%d)。\n", strxmlfilename, stmt.m_cda.rpc % starg.maxcount);
+		{
+			strselectp1 += x.colname; strselectp1 += ",";
+		}
 	}
 
-	// 把已抽取数据的最大id写入数据库表或starg.incfilename文件。
-	if (stmt.m_cda.rpc > 0) writeincfield();
+	strselectp1.pop_back();
 
-	return true;
+	SelectSql = SelectSql + "select " + strselectp1 + "from " + table + " " + starg.wheresql;
+
+	logfile.Write("strinsertsql=%s=\n", SelectSql.c_str());
 }

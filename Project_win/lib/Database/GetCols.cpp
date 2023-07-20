@@ -22,13 +22,13 @@ void GetCols::initdata(int mod)
 	}
 }
 
-bool GetCols::allcols(shared_ptr<connection> conn, char* tablename)
+bool GetCols::allcols(connection* conn, char* tablename)
 {
 	initdata(1);
 	struct st_columns columns;
 
 	sqlstatement stmt;
-	stmt.connect(conn.get());
+	stmt.connect(conn);
 	stmt.prepare("select lower(column_name),lower(data_type),character_maximum_length from information_schema.COLUMNS where table_name=:1");
 
 	stmt.bindin(1, tablename, 30); //绑定表名
@@ -90,13 +90,13 @@ bool GetCols::allcols(shared_ptr<connection> conn, char* tablename)
 	return true;
 }
 
-bool GetCols::pkcols(shared_ptr<connection> conn, char* tablename)
+bool GetCols::pkcols(connection* conn, char* tablename)
 {
 	initdata(2);
 	struct st_columns pk_columns;  //主键字段
 
 	sqlstatement stmt;
-	stmt.connect(conn.get());
+	stmt.connect(conn);
 	stmt.prepare("select lower(column_name),seq_in_index from information_schema.STATISTICS where table_name=:1 and index_name='primary' order by seq_in_index");
 	stmt.bindin(1, tablename, 30);     //绑定表名
 	stmt.bindout(1, pk_columns.colname, 30);   //主键字段
