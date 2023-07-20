@@ -193,7 +193,6 @@ bool XmlToDB()
 			// 读取目录，得到一个xml文件。
 			if (Dir.ReadDir() == false) break;
 
-
 			// 判断连接数据库是否成功
 			if (conn.get()->m_state == 0)
 			{
