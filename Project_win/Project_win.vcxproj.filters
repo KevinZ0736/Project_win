@@ -50,5 +50,6 @@
     <Xml Include="DBtool\DataToDB_conf.xml" />
     <Xml Include="DBtool\XmlToDB.xml" />
     <Xml Include="DBtool\DBToLocal_conf.xml" />
+    <Xml Include="DBtool\DTLtable.xml" />
   </ItemGroup>
 </Project>

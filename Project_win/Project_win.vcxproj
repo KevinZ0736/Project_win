@@ -60,6 +60,7 @@
   <ItemGroup>
     <Xml Include="DBtool\DataToDB_conf.xml" />
     <Xml Include="DBtool\DBToLocal_conf.xml" />
+    <Xml Include="DBtool\DTLtable.xml" />
     <Xml Include="DBtool\XmlToDB.xml" />
     <Xml Include="lib\Database\DBconfig.xml" />
   </ItemGroup>

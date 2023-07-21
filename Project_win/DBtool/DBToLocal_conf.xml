@@ -1,1 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<DBToLocal>
+	<connstr>127.0.0.1,root,mysqlpwd,mysql,3306</connstr>
+	<charset>utf8</charset>
+	<tname>,,</tname>
+	<selectsql>select obtid,date_format(ddatetime,'%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s'),t,p,u,wd,wf,r,vis,keyid from T_ZHOBTMIND where keyid>:1 and ddatetime>timestampadd(minute,-120,now())</selectsql>
+	<fieldstr>obtid,ddatetime,t,p,u,wd,wf,r,vis,keyid</fieldstr>
+	<fieldlen>10,19,8,8,8,8,8,8,8,15</fieldlen>
+	<bfilename>ZHOBTMIND</bfilename>
+	<efilename>HYCZ</efilename>
+	<outpath>/idcdata/dmindata</outpath>
+	<starttime></starttime>
+	<incfield>keyid</incfield>
+	<incfilename>/idcdata/dmining/dminingmysql_ZHOBTMIND_HYCZ.list</incfilename>
+	<timeout>30</timeout>
+	<pname>dminingmysql_ZHOBTMIND_HYCZ</pname>
+
+</DBToLocal>

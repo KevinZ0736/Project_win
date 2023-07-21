@@ -8,22 +8,25 @@ struct st_arg
 {
 	char connstr[101];     // 数据库的连接参数。
 	char charset[51];      // 数据库的字符集。
-	char tname[501];       // 需要抽取数据的表名
-	char wheresql[1001];    // 存放select的条件where
-	char fieldstr[501];    // 抽取数据的SQL语句输出结果集字段名，字段名之间用逗号分隔。
-	char fieldlen[501];    // 抽取数据的SQL语句输出结果集字段的长度，用逗号分隔。
 	char bfilename[31];    // 输出xml文件的前缀。
 	char efilename[31];    // 输出xml文件的后缀。
 	char outpath[301];     // 输出xml文件存放的目录。
 	int  maxcount;         // 输出xml文件最大记录数，0表示无限制。
 	char starttime[52];    // 程序运行的时间区间
-	char incfield[31];     // 递增字段名。
 	char incfilename[301]; // 已抽取数据的递增字段最大值存放的文件。
 	char connstr1[101];    // 已抽取数据的递增字段最大值存放的  数据库   的连接参数。
 	int  timeout;          // 进程心跳的超时时间。
 	char pname[51];        // 进程名，建议用"dminingmysql_后缀"的方式。
 
 } starg;
+
+// 存放需要抽取数据的表信息
+struct tableinfo
+{
+	char tablename[51];    //表名
+	char wheresql[1001];   //存放select的条件where
+	char incfield[31];     //递增字段名
+}table;
 
 
 int  ifieldcount;                          // 记录查询结果的有效字段的个数。
@@ -71,8 +74,9 @@ void crtxmlfilename();    // 生成xml文件名。
 bool getcolumn(string& table);     //
 
 long imaxincvalue;    // 自增字段的最大值。
-bool readincfile();   // 从starg.incfilename文件中获取已抽取数据的最大id。
-bool writeincfile();  // 把已抽取数据的最大id写入starg.incfilename文件。
+
+bool readincfield();  // 从starg.incfilename文件中获取已抽取数据的最大id。
+bool writeincfield(); // 把已抽取数据的最大id写入starg.incfilename文件。
 
 int main(int argc, char* argv[])
 {
@@ -147,8 +151,6 @@ bool _dminingmysql(string& table)
 
 	stmt.prepare(SelectSql.c_str());
 
-	char* strfieldvalue[ifieldcount];  // 抽取数据的SQL执行后，存放结果集字段值的数组。
-
 	//绑定结果集
 	int ii = 1;
 	for (auto& x : fieldstr)
@@ -210,8 +212,8 @@ bool _dminingmysql(string& table)
 		}
 
 		// 更新自增字段的最大值。
-		if ((strlen(starg.incfield) != 0) && (imaxincvalue < atol(strfieldvalue[incfieldpos])))
-			imaxincvalue = atol(strfieldvalue[incfieldpos]);
+		if ((strlen(starg.incfield) != 0) && (imaxincvalue < atol(fieldstr[incfieldpos].get())))
+			imaxincvalue = atol(fieldstr[incfieldpos].get());
 	}
 
 	if (File.IsOpened() == true)
@@ -238,7 +240,7 @@ bool _dminingmysql(string& table)
 		x.reset();
 	}
 	fieldstr.clear();
-
+	fieldname.clear();
 	return true;
 }
 
@@ -309,12 +311,6 @@ bool LoadConfig(const char* local)
 
 	GetXMLBuffer(strxmlbuffer, "tname", starg.tname, 500);
 	if (strlen(starg.tname) == 0) { logfile.Write("tname is null.\n"); return false; }
-
-	GetXMLBuffer(strxmlbuffer, "fieldstr", starg.fieldstr, 500);
-	if (strlen(starg.fieldstr) == 0) { logfile.Write("fieldstr is null.\n"); return false; }
-
-	GetXMLBuffer(strxmlbuffer, "fieldlen", starg.fieldlen, 500);
-	if (strlen(starg.fieldlen) == 0) { logfile.Write("fieldlen is null.\n"); return false; }
 
 	GetXMLBuffer(strxmlbuffer, "bfilename", starg.bfilename, 30);
 	if (strlen(starg.bfilename) == 0) { logfile.Write("bfilename is null.\n"); return false; }
@@ -391,8 +387,8 @@ bool getcolumn(string& table)
 	// 获取自增字段在结果集中的位置。
 	if (strlen(starg.incfield) != 0)
 	{
-		for (int ii = 0; ii < GC.m_allcount; ii++)
-			if (strcmp(starg.incfield, GC.m_vallcols[ii].colname) == 0) { incfieldpos = ii; break; }
+		for (int ii = 0; ii < fieldname.size(); ii++)
+			if (strcmp(starg.incfield, fieldname[ii]) == 0) { incfieldpos = ii; break; }
 
 		if (incfieldpos == -1)
 		{
@@ -531,4 +527,37 @@ void CrtSql(string& table)
 	SelectSql = SelectSql + "select " + strselectp1 + "from " + table + " " + starg.wheresql;
 
 	logfile.Write("strinsertsql=%s=\n", SelectSql.c_str());
+}
+
+bool LoadXmlToTable()
+{
+	V_XmlToTable.clear();
+
+	CFile File;
+
+	if (File.Open(starg.inifilename, "r") == false)
+	{
+		logfile.Write("File.Open(%s) 失败。\n", starg.inifilename);
+		return false;
+	}
+
+	char strBuffer[501];
+
+	while (true)
+	{
+		if (File.FFGETS(strBuffer, 500, "<endl/>") == false) break;
+
+		memset(&XmlToTable, 0, sizeof(struct st_xmltotable));
+
+		GetXMLBuffer(strBuffer, "filename", XmlToTable.filename, 100); // xml文件的匹配规则，用逗号分隔。
+		GetXMLBuffer(strBuffer, "tname", XmlToTable.tname, 30);        // 待入库的表名。
+		GetXMLBuffer(strBuffer, "uptbz", &XmlToTable.uptbz);          // 更新标志：1-更新；2-不更新。
+		GetXMLBuffer(strBuffer, "execsql", XmlToTable.execsql, 300);   // 处理xml文件之前，执行的SQL语句。
+
+		V_XmlToTable.push_back(XmlToTable);
+	}
+
+	logfile.Write(" Load XmlToTable(%s) ok.\n", starg.inifilename);
+
+	return true;
 }
