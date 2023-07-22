@@ -8,6 +8,7 @@ struct st_arg
 {
 	char connstr[101];     // 数据库的连接参数。
 	char charset[51];      // 数据库的字符集。
+	char inifilename[51];  // 包含需要抽取表的文件名
 	char bfilename[31];    // 输出xml文件的前缀。
 	char efilename[31];    // 输出xml文件的后缀。
 	char outpath[301];     // 输出xml文件存放的目录。
@@ -24,7 +25,7 @@ struct st_arg
 struct tableinfo
 {
 	char tablename[51];    //表名
-	char wheresql[1001];   //存放select的条件where
+	char wheresql[501];   //存放select的条件where
 	char incfield[31];     //递增字段名
 }table;
 
@@ -37,7 +38,7 @@ string SelectSql;  //查找语句
 #define MAXCOLCOUNT  500          // 每个表字段的最大数，也可以用MAXPARAMS宏（在_mysql.h中定义）。
 
 sqlstatement stmtsel;     // 插入和更新表的sqlstatement对象。
-void CrtSql(string& table); //构造Select语句
+void CrtSql(struct tableinfo& table); //构造Select语句
 
 GetCols GC;   // 获取表全部的字段和主键字段。
 
@@ -45,15 +46,15 @@ connection conn, conn1;
 
 CLogFile logfile;
 
-// 解析需要数据抽取的表名，并放入Cmd对象的容器中；
-CCmdStr CmdTable;
-
 // 程序退出和信号2、15的处理函数。
 void EXIT(int sig);
 
 // 存放Select的结果集
 vector<char*> fieldname;
 vector<unique_ptr<char[]>> fieldstr;
+
+// 解析需要数据抽取的表名，并放入v_table的容器中；
+vector<struct tableinfo> v_table;
 
 void _help();
 
@@ -64,14 +65,14 @@ bool LoadConfig(char* strxmlbuffer);
 bool instarttime();
 
 // 数据抽取的主函数。
-bool _dminingmysql(string& table);
+bool _dminingmysql(struct tableinfo& table);
 
 CPActive PActive;  // 进程心跳。
 
 char strxmlfilename[301]; // xml文件名。
 void crtxmlfilename();    // 生成xml文件名。
 
-bool getcolumn(string& table);     //
+bool getcolumn(struct tableinfo& table);     //
 
 long imaxincvalue;    // 自增字段的最大值。
 
@@ -125,7 +126,7 @@ int main(int argc, char* argv[])
 	}
 
 	// 从存放需抽取表的容器中，取出一个需要抽取数据的表
-	for (string x : CmdTable.m_vCmdStr)
+	for (auto& x : v_table)
 	{
 		_dminingmysql(x);
 	}
@@ -136,7 +137,7 @@ int main(int argc, char* argv[])
 }
 
 // 数据抽取的主函数。
-bool _dminingmysql(string& table)
+bool _dminingmysql(struct tableinfo& table)
 {
 	// 清理结果集数量
 	ifieldcount = 0;
@@ -159,7 +160,7 @@ bool _dminingmysql(string& table)
 	}
 
 	// 如果是增量抽取，绑定输入参数（已抽取数据的最大id）。
-	if (strlen(starg.incfield) != 0) stmt.bindin(1, &imaxincvalue);
+	if (strlen(table.incfield) != 0) stmt.bindin(1, &imaxincvalue);
 
 	if (stmt.execute() != 0)
 	{
@@ -212,7 +213,7 @@ bool _dminingmysql(string& table)
 		}
 
 		// 更新自增字段的最大值。
-		if ((strlen(starg.incfield) != 0) && (imaxincvalue < atol(fieldstr[incfieldpos].get())))
+		if ((strlen(table.incfield) != 0) && (imaxincvalue < atol(fieldstr[incfieldpos].get())))
 			imaxincvalue = atol(fieldstr[incfieldpos].get());
 	}
 
@@ -306,11 +307,8 @@ bool LoadConfig(const char* local)
 	GetXMLBuffer(strxmlbuffer, "charset", starg.charset, 50);
 	if (strlen(starg.charset) == 0) { logfile.Write("charset is null.\n"); return false; }
 
-	GetXMLBuffer(strxmlbuffer, "wheresql", starg.wheresql, 1000);
-	if (strlen(starg.wheresql) == 0) { logfile.Write("wheresql is null.\n"); return false; }
-
-	GetXMLBuffer(strxmlbuffer, "tname", starg.tname, 500);
-	if (strlen(starg.tname) == 0) { logfile.Write("tname is null.\n"); return false; }
+	GetXMLBuffer(strxmlbuffer, "inifilename", starg.charset, 50);
+	if (strlen(starg.charset) == 0) { logfile.Write("charset is null.\n"); return false; }
 
 	GetXMLBuffer(strxmlbuffer, "bfilename", starg.bfilename, 30);
 	if (strlen(starg.bfilename) == 0) { logfile.Write("bfilename is null.\n"); return false; }
@@ -321,9 +319,9 @@ bool LoadConfig(const char* local)
 	GetXMLBuffer(strxmlbuffer, "outpath", starg.outpath, 300);
 	if (strlen(starg.outpath) == 0) { logfile.Write("outpath is null.\n"); return false; }
 
-	GetXMLBuffer(strxmlbuffer, "starttime", starg.starttime, 50);  // 可选参数。
+	GetXMLBuffer(strxmlbuffer, "maxcount", &starg.maxcount);  // 可选参数。
 
-	GetXMLBuffer(strxmlbuffer, "incfield", starg.incfield, 30);  // 可选参数。
+	GetXMLBuffer(strxmlbuffer, "starttime", starg.starttime, 50);  // 可选参数。
 
 	GetXMLBuffer(strxmlbuffer, "incfilename", starg.incfilename, 300);  // 可选参数。
 
@@ -333,15 +331,48 @@ bool LoadConfig(const char* local)
 	GetXMLBuffer(strxmlbuffer, "pname", starg.pname, 50);     // 进程名。
 	if (strlen(starg.pname) == 0) { logfile.Write("pname is null.\n");  return false; }
 
-	// 把starg.tname解析到ifieldlen数组中；
-	CmdTable.SplitToCmd(starg.tname, ",");
+	// 把tname解析到v_table数组中；
+	if (!LoadXmlToTable()) return false;
+	return true;
+}
 
-	if (CmdTable.CmdCount() == 0)
+bool LoadXmlToTable()
+{
+	v_table.clear();
+
+	CFile File;
+
+	if (File.Open(starg.inifilename, "r") == false)
 	{
-		logfile.Write("读取表名失败\n"); return false;
+		logfile.Write("File.Open(%s) 失败。\n", starg.inifilename);
+		return false;
 	}
 
-	return true;
+	char strBuffer[501];
+
+	while (true)
+	{
+		if (File.FFGETS(strBuffer, 500, "<endl/>") == false) break;
+
+		memset(&table, 0, sizeof(struct tableinfo));
+
+		GetXMLBuffer(strBuffer, "tname", table.tablename, 100);         // xml文件的匹配规则，用逗号分隔。
+		GetXMLBuffer(strBuffer, "wheresql", table.wheresql, 500);        // 待入库的表名。
+		GetXMLBuffer(strBuffer, "incfield", table.incfield, 30);        // 更新标志：1-更新；2-不更新。
+
+		v_table.push_back(table);
+	}
+
+	if (v_table.size() == 0)
+	{
+		logfile.Write("Load XmlToTable(%s) failed.\n", starg.inifilename);
+		return false;
+	}
+	else {
+		logfile.Write(" Load XmlToTable(%s) ok.\n", starg.inifilename);
+		return true;
+	}
+
 }
 
 // 判断当前时间是否在程序运行的时间区间内。
@@ -370,13 +401,13 @@ void crtxmlfilename()   // 生成xml文件名。
 	SNPRINTF(strxmlfilename, 300, sizeof(strxmlfilename), "%s/%s_%s_%s_%d.xml", starg.outpath, starg.bfilename, strLocalTime, starg.efilename, iseq++);
 }
 
-bool getcolumn(string& table)
+bool getcolumn(struct tableinfo& table)
 {
 	// 将存储表字段的对象初始化
 	GC.initdata(0);
 
 	// 读取表的字段
-	if (GC.allcols(&conn1, &table[0]) == false) { logfile.Write("读取表字段时，数据库发生错误！\n"); return false; }
+	if (GC.allcols(&conn1, table.tablename) == false) { logfile.Write("读取表字段时，数据库发生错误！\n"); return false; }
 
 	// 如果GC.m_allcount为0，说明表根本不存在，返回2。
 	if ((GC.m_allcount == 0) || (GC.m_allcount > MAXCOLCOUNT)) { logfile.Write("%s表不存在或字段数超出限制！\n", table); return false; } // 待入库的表不存在。
@@ -385,14 +416,14 @@ bool getcolumn(string& table)
 	CrtSql(table);
 
 	// 获取自增字段在结果集中的位置。
-	if (strlen(starg.incfield) != 0)
+	if (strlen(table.incfield) != 0)
 	{
 		for (int ii = 0; ii < fieldname.size(); ii++)
-			if (strcmp(starg.incfield, fieldname[ii]) == 0) { incfieldpos = ii; break; }
+			if (strcmp(table.incfield, fieldname[ii]) == 0) { incfieldpos = ii; break; }
 
 		if (incfieldpos == -1)
 		{
-			logfile.Write("递增字段名%s不在列表%s中。\n", starg.incfield, table); return false;
+			logfile.Write("递增字段名%s不在列表%s中。\n", table.incfield, table); return false;
 		}
 	}
 	return true;
@@ -403,8 +434,8 @@ bool readincfield()
 {
 	imaxincvalue = 0;    // 自增字段的最大值。
 
-	// 如果starg.incfield参数为空，表示不是增量抽取。
-	if (strlen(starg.incfield) == 0) return true;
+	// 如果table.incfield参数为空，表示不是增量抽取。
+	if (strlen(table.incfield) == 0) return true;
 
 	if (strlen(starg.connstr1) != 0)
 	{
@@ -432,7 +463,7 @@ bool readincfield()
 		imaxincvalue = atol(strtemp);
 	}
 
-	logfile.Write("上次已抽取数据的位置（%s=%ld）。\n", starg.incfield, imaxincvalue);
+	logfile.Write("上次已抽取数据的位置（%s=%ld）。\n", table.incfield, imaxincvalue);
 
 	return true;
 }
@@ -440,8 +471,8 @@ bool readincfield()
 // 把已抽取数据的最大id写入starg.incfilename文件。
 bool writeincfield()
 {
-	// 如果starg.incfield参数为空，表示不是增量抽取。
-	if (strlen(starg.incfield) == 0) return true;
+	// 如果table.incfield参数为空，表示不是增量抽取。
+	if (strlen(table.incfield) == 0) return true;
 
 	if (strlen(starg.connstr1) != 0)
 	{
@@ -488,7 +519,7 @@ bool writeincfield()
 	return true;
 }
 
-void CrtSql(string& table)
+void CrtSql(struct tableinfo& table)
 {
 
 	SelectSql.clear();   // 插入表的SQL语句
@@ -524,40 +555,7 @@ void CrtSql(string& table)
 
 	strselectp1.pop_back();
 
-	SelectSql = SelectSql + "select " + strselectp1 + "from " + table + " " + starg.wheresql;
+	SelectSql = SelectSql + "select " + strselectp1 + "from " + table.tablename + " " + table.wheresql;
 
 	logfile.Write("strinsertsql=%s=\n", SelectSql.c_str());
-}
-
-bool LoadXmlToTable()
-{
-	V_XmlToTable.clear();
-
-	CFile File;
-
-	if (File.Open(starg.inifilename, "r") == false)
-	{
-		logfile.Write("File.Open(%s) 失败。\n", starg.inifilename);
-		return false;
-	}
-
-	char strBuffer[501];
-
-	while (true)
-	{
-		if (File.FFGETS(strBuffer, 500, "<endl/>") == false) break;
-
-		memset(&XmlToTable, 0, sizeof(struct st_xmltotable));
-
-		GetXMLBuffer(strBuffer, "filename", XmlToTable.filename, 100); // xml文件的匹配规则，用逗号分隔。
-		GetXMLBuffer(strBuffer, "tname", XmlToTable.tname, 30);        // 待入库的表名。
-		GetXMLBuffer(strBuffer, "uptbz", &XmlToTable.uptbz);          // 更新标志：1-更新；2-不更新。
-		GetXMLBuffer(strBuffer, "execsql", XmlToTable.execsql, 300);   // 处理xml文件之前，执行的SQL语句。
-
-		V_XmlToTable.push_back(XmlToTable);
-	}
-
-	logfile.Write(" Load XmlToTable(%s) ok.\n", starg.inifilename);
-
-	return true;
 }

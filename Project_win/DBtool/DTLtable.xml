@@ -1,1 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<DTLtable>
+	<tname></tname>
+	<wheresql></wheresql>
+	<incfield></incfield>
+	<endl/>
+	<tname></tname>
+	<where></where>
+	<incfield></incfield>
+	<endl/>
+</DTLtable>
