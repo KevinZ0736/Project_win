@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <DTLtable>
-	<tname></tname>
+	<tname>DataCenter</tname>
 	<wheresql></wheresql>
-	<incfield></incfield>
+	<incfield>keyid</incfield>
 	<incfilename>/usr/project/Project_win/data/outfile/dminingmysql_ZHOBTMIND_HYCZ.list</incfilename>
 	<endl/>
-	<tname></tname>
-	<where></where>
-	<incfield></incfield>
+	<tname>Observe_Data</tname>
+	<where>where keyid>:1 and ddatetime>timestampadd(minute,-120,now())</where>
+	<incfield>keyid</incfield>
 	<incfilename>/usr/project/Project_win/data/outfile/dminingmysql_ZHOBTMIND_HYCZ.list</incfilename>
 	<endl/>
 </DTLtable>

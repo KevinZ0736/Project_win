@@ -59,7 +59,7 @@ vector<struct tableinfo> v_table;
 void _help();
 
 // 把xml解析到参数starg结构中。
-bool LoadConfig(char* strxmlbuffer);
+bool LoadConfig(const char* local);
 
 // 判断当前时间是否在程序运行的时间区间内。
 bool instarttime();
@@ -75,6 +75,8 @@ void crtxmlfilename();    // 生成xml文件名。
 bool getcolumn(struct tableinfo& table);     //
 
 long imaxincvalue;    // 自增字段的最大值。
+
+bool LoadXmlToTable(); //加载表的参数
 
 bool readincfield(struct tableinfo& table);  // 从starg.incfilename文件中获取已抽取数据的最大id。
 bool writeincfield(struct tableinfo& table); // 把已抽取数据的最大id写入starg.incfilename文件。
@@ -114,6 +116,7 @@ int main(int argc, char* argv[])
 	}
 
 	logfile.Write("connect database(%s) ok.\n", starg.connstr);
+	STRCPY(starg.connstr1, sizeof(starg.connstr1), starg.connstr);
 
 	// 连接本地的数据库，用于存放已抽取数据的自增字段的最大值。
 	if (strlen(starg.connstr1) != 0)
@@ -193,7 +196,7 @@ bool _dminingmysql(struct tableinfo& table)
 		}
 
 		for (int ii = 1; ii <= ifieldcount; ii++)
-			File.Fprintf("<%s>%s</%s>", fieldname[ii - 1], fieldstr[ii - 1], fieldname[ii - 1]);
+			File.Fprintf("<%s>%s</%s>", fieldname[ii - 1], fieldstr[ii - 1].get(), fieldname[ii - 1]);
 
 		File.Fprintf("<endl/>\n");
 
@@ -354,9 +357,9 @@ bool LoadXmlToTable()
 
 		memset(&table, 0, sizeof(struct tableinfo));
 
-		GetXMLBuffer(strBuffer, "tname", table.tablename, 100);         // xml文件的匹配规则，用逗号分隔。
+		GetXMLBuffer(strBuffer, "tname", table.tablename, 100);          // xml文件的匹配规则，用逗号分隔。
 		GetXMLBuffer(strBuffer, "wheresql", table.wheresql, 500);        // 待入库的表名。
-		GetXMLBuffer(strBuffer, "incfield", table.incfield, 30);        // 更新标志：1-更新；2-不更新。
+		GetXMLBuffer(strBuffer, "incfield", table.incfield, 30);         // 更新标志：1-更新；2-不更新。
 		GetXMLBuffer(strBuffer, "incfilename", table.incfilename, 300);  // 可选参数。
 
 		v_table.push_back(table);

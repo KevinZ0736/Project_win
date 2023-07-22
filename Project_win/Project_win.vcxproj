@@ -111,7 +111,7 @@
     <RemoteIntRelDir>$(RemoteProjectRelDir)/DBtool/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/DBtool/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
-    <TargetName>DataToDB</TargetName>
+    <TargetName>DBToLocal</TargetName>
     <IncludePath>D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
   </PropertyGroup>
