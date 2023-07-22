@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <DBToLocal>
-	<connstr>127.0.0.1,root,mysqlpwd,mysql,3306</connstr>
+	<connstr>124.222.175.81,root,kevin,testdb,3306</connstr>
 	<charset>utf8</charset>
-	<inifilename>DTLtable.xml</inifilename>
+	<inifilename>/usr/project/Project_win/DBtool/DTLtable.xml</inifilename>
 	<bfilename>ZHOBTMIND</bfilename>
 	<efilename>HYCZ</efilename>
-	<outpath>/idcdata/dmindata</outpath>
-	<maxcount>200</maxcount>
+	<outpath>/usr/project/Project_win/data/outfile</outpath>
+	<maxcount>500</maxcount>
 	<starttime></starttime>
-	<incfilename>/idcdata/dmining/dminingmysql_ZHOBTMIND_HYCZ.list</incfilename>
 	<timeout>30</timeout>
-	<pname>dminingmysql_ZHOBTMIND_HYCZ</pname>
+	<pname>dminingmysql</pname>
 
 </DBToLocal>

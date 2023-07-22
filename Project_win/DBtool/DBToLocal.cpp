@@ -14,7 +14,6 @@ struct st_arg
 	char outpath[301];     // 输出xml文件存放的目录。
 	int  maxcount;         // 输出xml文件最大记录数，0表示无限制。
 	char starttime[52];    // 程序运行的时间区间
-	char incfilename[301]; // 已抽取数据的递增字段最大值存放的文件。
 	char connstr1[101];    // 已抽取数据的递增字段最大值存放的  数据库   的连接参数。
 	int  timeout;          // 进程心跳的超时时间。
 	char pname[51];        // 进程名，建议用"dminingmysql_后缀"的方式。
@@ -25,8 +24,9 @@ struct st_arg
 struct tableinfo
 {
 	char tablename[51];    //表名
-	char wheresql[501];   //存放select的条件where
+	char wheresql[501];    //存放select的条件where
 	char incfield[31];     //递增字段名
+	char incfilename[301]; // 已抽取数据的递增字段最大值存放的文件。
 }table;
 
 
@@ -76,8 +76,8 @@ bool getcolumn(struct tableinfo& table);     //
 
 long imaxincvalue;    // 自增字段的最大值。
 
-bool readincfield();  // 从starg.incfilename文件中获取已抽取数据的最大id。
-bool writeincfield(); // 把已抽取数据的最大id写入starg.incfilename文件。
+bool readincfield(struct tableinfo& table);  // 从starg.incfilename文件中获取已抽取数据的最大id。
+bool writeincfield(struct tableinfo& table); // 把已抽取数据的最大id写入starg.incfilename文件。
 
 int main(int argc, char* argv[])
 {
@@ -146,7 +146,7 @@ bool _dminingmysql(struct tableinfo& table)
 	if (!getcolumn(table)) return false;
 
 	// 从数据库表中或starg.incfilename文件中获取已抽取数据的最大id。
-	readincfield();
+	readincfield(table);
 
 	sqlstatement stmt(&conn);
 
@@ -233,7 +233,7 @@ bool _dminingmysql(struct tableinfo& table)
 	}
 
 	// 把已抽取数据的最大id写入数据库表或starg.incfilename文件。
-	if (stmt.m_cda.rpc > 0) writeincfield();
+	if (stmt.m_cda.rpc > 0) writeincfield(table);
 
 	//清理结果集容器
 	for (auto& x : fieldstr)
@@ -323,8 +323,6 @@ bool LoadConfig(const char* local)
 
 	GetXMLBuffer(strxmlbuffer, "starttime", starg.starttime, 50);  // 可选参数。
 
-	GetXMLBuffer(strxmlbuffer, "incfilename", starg.incfilename, 300);  // 可选参数。
-
 	GetXMLBuffer(strxmlbuffer, "timeout", &starg.timeout);   // 进程心跳的超时时间。
 	if (starg.timeout == 0) { logfile.Write("timeout is null.\n");  return false; }
 
@@ -359,6 +357,7 @@ bool LoadXmlToTable()
 		GetXMLBuffer(strBuffer, "tname", table.tablename, 100);         // xml文件的匹配规则，用逗号分隔。
 		GetXMLBuffer(strBuffer, "wheresql", table.wheresql, 500);        // 待入库的表名。
 		GetXMLBuffer(strBuffer, "incfield", table.incfield, 30);        // 更新标志：1-更新；2-不更新。
+		GetXMLBuffer(strBuffer, "incfilename", table.incfilename, 300);  // 可选参数。
 
 		v_table.push_back(table);
 	}
@@ -430,7 +429,7 @@ bool getcolumn(struct tableinfo& table)
 }
 
 // 从数据库表中或starg.incfilename文件中获取已抽取数据的最大id。
-bool readincfield()
+bool readincfield(struct tableinfo& table)
 {
 	imaxincvalue = 0;    // 自增字段的最大值。
 
@@ -443,7 +442,7 @@ bool readincfield()
 		// create table T_MAXINCVALUE(pname varchar(50),maxincvalue numeric(15),primary key(pname));
 		sqlstatement stmt(&conn1);
 		stmt.prepare("select maxincvalue from T_MAXINCVALUE where pname=:1");
-		stmt.bindin(1, starg.pname, 50);
+		stmt.bindin(1, table.tablename, 50);
 		stmt.bindout(1, &imaxincvalue);
 		stmt.execute();
 		stmt.next();
@@ -455,7 +454,7 @@ bool readincfield()
 
 		// 如果打开starg.incfilename文件失败，表示是第一次运行程序，也不必返回失败。
 		// 也可能是文件丢了，那也没办法，只能重新抽取。
-		if (File.Open(starg.incfilename, "r") == false) return true;
+		if (File.Open(table.incfilename, "r") == false) return true;
 
 		// 从文件中读取已抽取数据的最大id。
 		char strtemp[31];
@@ -469,7 +468,7 @@ bool readincfield()
 }
 
 // 把已抽取数据的最大id写入starg.incfilename文件。
-bool writeincfield()
+bool writeincfield(struct tableinfo& table)
 {
 	// 如果table.incfield参数为空，表示不是增量抽取。
 	if (strlen(table.incfield) == 0) return true;
@@ -484,19 +483,19 @@ bool writeincfield()
 		{
 			// 如果表不存在，就创建表。
 			conn1.execute("create table T_MAXINCVALUE(pname varchar(50),maxincvalue numeric(15),primary key(pname))");
-			conn1.execute("insert into T_MAXINCVALUE values('%s',%ld)", starg.pname, imaxincvalue);
+			conn1.execute("insert into T_MAXINCVALUE values('%s',%ld)", table.tablename, imaxincvalue);
 			conn1.commit();
 			return true;
 		}
 		stmt.bindin(1, &imaxincvalue);
-		stmt.bindin(2, starg.pname, 50);
+		stmt.bindin(2, table.tablename, 50);
 		if (stmt.execute() != 0)
 		{
 			logfile.Write("stmt.execute() failed.\n%s\n%s\n", stmt.m_sql, stmt.m_cda.message); return false;
 		}
 		if (stmt.m_cda.rpc == 0)
 		{
-			conn1.execute("insert into T_MAXINCVALUE values('%s',%ld)", starg.pname, imaxincvalue);
+			conn1.execute("insert into T_MAXINCVALUE values('%s',%ld)", table.tablename, imaxincvalue);
 		}
 		conn1.commit();
 	}
@@ -505,9 +504,9 @@ bool writeincfield()
 		// 把自增字段的最大值写入文件。
 		CFile File;
 
-		if (File.Open(starg.incfilename, "w+") == false)
+		if (File.Open(table.incfilename, "w+") == false)
 		{
-			logfile.Write("File.Open(%s) failed.\n", starg.incfilename); return false;
+			logfile.Write("File.Open(%s) failed.\n", table.incfilename); return false;
 		}
 
 		// 把已抽取数据的最大id写入文件。
