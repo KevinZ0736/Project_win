@@ -6,7 +6,7 @@
 	<incfilename>/usr/project/Project_win/data/outfile/dminingmysql_ZHOBTMIND_HYCZ.list</incfilename>
 	<endl/>
 	<tname>Observe_Data</tname>
-	<where>where keyid>:1 and ddatetime>timestampadd(minute,-120,now())</where>
+	<wheresql>where keyid>:1 and ddatetime>timestampadd(minute,-120,now()) </wheresql>
 	<incfield>keyid</incfield>
 	<incfilename>/usr/project/Project_win/data/outfile/dminingmysql_ZHOBTMIND_HYCZ.list</incfilename>
 	<endl/>

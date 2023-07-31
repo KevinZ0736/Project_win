@@ -310,8 +310,8 @@ bool LoadConfig(const char* local)
 	GetXMLBuffer(strxmlbuffer, "charset", starg.charset, 50);
 	if (strlen(starg.charset) == 0) { logfile.Write("charset is null.\n"); return false; }
 
-	GetXMLBuffer(strxmlbuffer, "inifilename", starg.charset, 50);
-	if (strlen(starg.charset) == 0) { logfile.Write("charset is null.\n"); return false; }
+	GetXMLBuffer(strxmlbuffer, "inifilename", starg.inifilename, 50);
+	if (strlen(starg.inifilename) == 0) { logfile.Write("inifilename is null.\n"); return false; }
 
 	GetXMLBuffer(strxmlbuffer, "bfilename", starg.bfilename, 30);
 	if (strlen(starg.bfilename) == 0) { logfile.Write("bfilename is null.\n"); return false; }
@@ -544,7 +544,7 @@ void CrtSql(struct tableinfo& table)
 		fieldname.push_back(x.colname);
 		fieldstr.push_back(unique_ptr<char[]>(new char[x.collen + 1]));
 
-		if (strcmp(x.datatype, "date") != 0)
+		if (strcmp(x.datatype, "date") == 0)
 		{
 			SNPRINTF(strtemp, 100, sizeof(strtemp), "date_format(%s,'%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')", x.colname);
 			strselectp1 += strtemp;  strselectp1 += ",";
@@ -557,7 +557,7 @@ void CrtSql(struct tableinfo& table)
 
 	strselectp1.pop_back();
 
-	SelectSql = SelectSql + "select " + strselectp1 + "from " + table.tablename + " " + table.wheresql;
+	SelectSql = SelectSql + "select " + strselectp1 + " from " + table.tablename + " " + table.wheresql + " ";
 
-	logfile.Write("strinsertsql=%s=\n", SelectSql.c_str());
+	logfile.Write("sql=%s=\n", SelectSql.c_str());
 }

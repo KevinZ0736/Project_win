@@ -18,7 +18,7 @@ ConnectionPool* pool = ConnectionPool::getConnectPool(); //建立连接池
 void _help(char* argv[]);
 
 // 把xml解析到参数starg结构中
-bool LoadConfig(char* conf);
+bool LoadConfig(char* conf); 4
 
 CLogFile logfile;
 

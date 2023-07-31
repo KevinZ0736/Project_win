@@ -17,6 +17,7 @@
     <ClInclude Include="lib\Database\ConnectionPool.h" />
     <ClInclude Include="lib\freecplus\_mysql.h" />
     <ClInclude Include="lib\Database\GetCols.h" />
+    <ClInclude Include="lib\pthread\PthreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\freecplus\_ftp.cpp">
@@ -32,7 +33,9 @@
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
-    <ClCompile Include="DBtool\DBToLocal.cpp" />
+    <ClCompile Include="webserver\webserver.cpp" />
+    <ClCompile Include="lib\pthread\PthreadPool.cpp" />
+    <ClCompile Include="proxy\Forward.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
@@ -48,7 +51,7 @@
   <ItemGroup>
     <Xml Include="lib\Database\DBconfig.xml" />
     <Xml Include="DBtool\DataToDB_conf.xml" />
-    <Xml Include="DBtool\XmlToDB.xml" />
+    <Xml Include="DBtool\DTDtable.xml" />
     <Xml Include="DBtool\DBToLocal_conf.xml" />
     <Xml Include="DBtool\DTLtable.xml" />
   </ItemGroup>

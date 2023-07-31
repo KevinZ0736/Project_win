@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <DataToDB>
-	<inifilename>/usr/project/Project_win/DBtool/XmlToDB.xml</inifilename>
+	<inifilename>/usr/project/Project_win/DBtool/DTDtable.xml</inifilename>
 	<xmlpath>/usr/project/Project_win/data/bin</xmlpath>
 	<xmlpathbak>/usr/project/Project_win/data/success</xmlpathbak>
 	<xmlpatherr>/usr/project/Project_win/data/fail</xmlpatherr>
