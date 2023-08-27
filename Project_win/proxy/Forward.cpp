@@ -1,5 +1,4 @@
 ﻿#include"_public.h"
-#include<unordered_map>
 #include<fstream>
 
 #define MAXSOCK 1024  // 最大的连接数
@@ -17,8 +16,8 @@ vector<struct st_route> V_Route;  // 代理路由的容器
 
 int epollfd = 0, timefd = 0;  // epoll与定时器的句柄。
 
-unordered_map<int, int> UM_ClientSocks; // 存放每个socket连接对端的socket的值。
-unordered_map<int, int> UM_ClientAcTime;  // 存放每个socket连接最后一次收发报文的时间。
+int UM_ClientSocks[MAXSOCK]; // 存放每个socket连接对端的socket的值。
+int UM_ClientAcTime[MAXSOCK];  // 存放每个socket连接最后一次收发报文的时间。
 
 
 // 把代理路由记载到容器中
@@ -60,7 +59,7 @@ int main(int argc, char* argv[])
 
 	PActive.AddPInfo(30, "inetd");   // 设置进程的心跳时间为30秒
 
-	// 把代理路由参数加载到vroute容器。
+	// 把代理路由参数加载到V_Route容器。
 	if (LoadRoute(argv[2]) == false) return -1;
 
 	logfile.Write("加载代理路由参数成功(%d)。\n", V_Route.size());
@@ -117,28 +116,32 @@ int main(int argc, char* argv[])
 		// 遍历epoll返回的已发生事件的数组evs
 		for (int i = 0; i < infds; i++)
 		{
-			// logfile.Write("events=%d,data.fd=%d\n",evs[ii].events,evs[ii].data.fd);
+			// logfile.Write("events=%d,data.fd=%d\n",evs[i].events,evs[i].data.fd);
 
 			////////////////////////////////////////////////////////
 			// 如果定时器的时间已到，设置进程的心跳，清理空闲的客户端socket。
 			if (evs[i].data.fd == timefd)
 			{
 				timerfd_settime(timefd, 0, &timeout, NULL);
+
+				timerfd_settime(timefd, 0, &timeout, NULL);  // 重新设置定时器。
+
+				for (int j = 0; j < MAXSOCK; j++)
 				{
-					timerfd_settime(timefd, 0, &timeout, NULL);  // 重新设置定时器。
-
-					for (int j = 0; j < MAXSOCK; j++)
+					// 如果客户端socket空闲的时间超过80秒就关掉它。
+					if ((UM_ClientSocks[j] > 0) && ((time(0) - UM_ClientAcTime[j]) > 80))
 					{
-						// 如果客户端socket空闲的时间超过80秒就关掉它。
-						if ((ClientSocks[j] > 0) && ((time(0) - ClientAcTime[j]) > 80))
-						{
-
-						}
-
+						logfile.Write("client(%d,%d) timeout。\n", UM_ClientSocks[j], UM_ClientAcTime[UM_ClientSocks[j]]);
+						close(UM_ClientSocks[j]); close(UM_ClientSocks[UM_ClientSocks[j]]);
+						// 把数组中对端的socket置空，这一行代码和下一行代码的顺序不能乱。
+						UM_ClientSocks[UM_ClientSocks[j]] = 0;
+						// 把数组中本端的socket置空，这一行代码和上一行代码的顺序不能乱。
+						UM_ClientSocks[j] = 0;
 					}
-
 				}
+				continue;
 			}
+
 			////////////////////////////////////////////////////////
 
 			////////////////////////////////////////////////////////
@@ -178,21 +181,54 @@ int main(int argc, char* argv[])
 					ev.data.fd = DstSock; ev.events = EPOLLIN;
 					epoll_ctl(epollfd, EPOLL_CTL_ADD, DstSock, &ev);
 
-					// 更新clientsocks数组中两端soccket的值和活动时间
+					// 更新UM_ClientSocks数组中两端soccket的值和活动时间
 					UM_ClientSocks[ClientSock] = DstSock;
 					UM_ClientSocks[DstSock] = ClientSock;
 
-					UM_ClientAcTime[ClientSock] = timef()
+					UM_ClientAcTime[ClientSock] = time(0);
+					UM_ClientAcTime[DstSock] = time(0);
+
+					break;
 				}
 			}
+			// 如果jj<V_Route.size()，表示事件在上面的for循环中已被处理。
+			if (j < V_Route.size()) continue;
+			////////////////////////////////////////////////////////
 
+			////////////////////////////////////////////////////////
+			// 如果是客户端连接的socke有事件，表示有报文发过来或者连接已断开。
+
+			char buffer[5000];   // 存放从客户端读取的数据。
+			int  buflen = 0;       // 从socket中读到的数据的大小。
+
+			// 从一端读取数据。
+			memset(buffer, 0, sizeof(buffer));
+			if ((buflen = recv(evs[i].data.fd, buffer, sizeof(buffer), 0)) <= 0)
+			{
+				// 如果连接已断开，需要关闭两个通道的socket。
+				logfile.Write("client(%d,%d) disconnected。\n", evs[i].data.fd, UM_ClientSocks[evs[i].data.fd]);
+				close(evs[i].data.fd);                            // 关闭客户端的连接。
+				close(UM_ClientSocks[evs[i].data.fd]);               // 关闭客户端对端的连接。
+				UM_ClientSocks[UM_ClientSocks[evs[i].data.fd]] = 0;       // 这一行代码和下一行代码的顺序不能乱。
+				UM_ClientSocks[evs[i].data.fd] = 0;                    // 这一行代码和上一行代码的顺序不能乱。
+
+				continue;
+			}
+
+			// 成功的读取到了数据，把接收到的报文内容原封不动的发给对端。
+			// logfile.Write("from %d to %d,%d bytes。\n",evs[i].data.fd,UM_ClientSocks[evs[i].data.fd],buflen);
+			send(UM_ClientSocks[evs[i].data.fd], buffer, buflen, 0);
+
+			// 更新客户端连接的使用时间。
+			UM_ClientAcTime[evs[i].data.fd] = time(0);
+			UM_ClientAcTime[UM_ClientSocks[evs[i].data.fd]] = time(0);
 
 
 		}
 
 	}
 
-
+	return 0;
 }
 
 bool LoadRoute(const char* inifile)
@@ -268,4 +304,29 @@ int InitServer(int port)
 	}
 
 	return sock;
+}
+
+// 向目标ip和端口发起socket连接。
+int ConnToDst(const char* ip, const int port)
+{
+	// 第1步：创建客户端的socket。
+	int sockfd;
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) return -1;
+
+	// 第2步：向服务器发起连接请求。
+	struct hostent* h;
+	if ((h = gethostbyname(ip)) == 0) { close(sockfd); return -1; }
+
+	struct sockaddr_in servaddr;
+	memset(&servaddr, 0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(port); // 指定服务端的通讯端口。
+	memcpy(&servaddr.sin_addr, h->h_addr, h->h_length);
+
+	// 把socket设置为非阻塞。
+	fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFD, 0) | O_NONBLOCK);
+
+	connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
+
+	return sockfd;
 }

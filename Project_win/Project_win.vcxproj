@@ -35,6 +35,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="lib\base\cpp_container.h" />
+    <ClInclude Include="lib\base\cpp_functional.h" />
+    <ClInclude Include="lib\base\cpp_smartptr.h" />
+    <ClInclude Include="lib\base\cpp_thread.h" />
+    <ClInclude Include="lib\base\noncopyable.h" />
     <ClInclude Include="lib\Database\ConnectionPool.h" />
     <ClInclude Include="lib\Database\GetCols.h" />
     <ClInclude Include="lib\Database\MysqlConn.h" />
@@ -43,7 +48,6 @@
     <ClInclude Include="lib\freecplus\_ftp.h" />
     <ClInclude Include="lib\freecplus\_mysql.h" />
     <ClInclude Include="lib\freecplus\_public.h" />
-    <ClInclude Include="lib\pthread\PthreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
@@ -53,9 +57,6 @@
     <ClCompile Include="lib\freecplus\_ftp.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
     <ClCompile Include="lib\freecplus\_public.cpp" />
-    <ClCompile Include="lib\pthread\PthreadPool.cpp" />
-    <ClCompile Include="proxy\Forward.cpp" />
-    <ClCompile Include="webserver\webserver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="FTP\config.txt" />
@@ -114,7 +115,7 @@
     <RemoteIntRelDir>$(RemoteProjectRelDir)/DBtool/obj/$(Platform)/$(Configuration)</RemoteIntRelDir>
     <RemoteOutRelDir>$(RemoteProjectRelDir)/DBtool/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
-    <TargetName>DBToLocal</TargetName>
+    <TargetName>tt</TargetName>
     <IncludePath>D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
   </PropertyGroup>
@@ -122,11 +123,13 @@
     <ClCompile />
     <ClCompile>
       <AdditionalIncludeDirectories>/usr/include/mysql;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\lib\Database;D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>/usr/lib64/mysql;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LibraryDependencies>mysqlclient</LibraryDependencies>
+      <AdditionalOptions>-lpthread %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

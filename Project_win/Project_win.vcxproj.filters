@@ -17,7 +17,11 @@
     <ClInclude Include="lib\Database\ConnectionPool.h" />
     <ClInclude Include="lib\freecplus\_mysql.h" />
     <ClInclude Include="lib\Database\GetCols.h" />
-    <ClInclude Include="lib\pthread\PthreadPool.h" />
+    <ClInclude Include="lib\base\noncopyable.h" />
+    <ClInclude Include="lib\base\cpp_thread.h" />
+    <ClInclude Include="lib\base\cpp_smartptr.h" />
+    <ClInclude Include="lib\base\cpp_functional.h" />
+    <ClInclude Include="lib\base\cpp_container.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\freecplus\_ftp.cpp">
@@ -33,9 +37,6 @@
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
-    <ClCompile Include="webserver\webserver.cpp" />
-    <ClCompile Include="lib\pthread\PthreadPool.cpp" />
-    <ClCompile Include="proxy\Forward.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
