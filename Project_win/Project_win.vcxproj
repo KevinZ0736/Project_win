@@ -50,6 +50,7 @@
     <ClInclude Include="lib\freecplus\_public.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Project-win\sourcecode\project\tools\c\webserver.cpp" />
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
     <ClCompile Include="lib\Database\MysqlConn.cpp" />
@@ -116,13 +117,13 @@
     <RemoteOutRelDir>$(RemoteProjectRelDir)/DBtool/bin/$(Platform)/$(Configuration)</RemoteOutRelDir>
     <RemoteDeployDir>$(RemoteRootDir)/$(ProjectName)</RemoteDeployDir>
     <TargetName>tt</TargetName>
-    <IncludePath>D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
+    <IncludePath>D:\learn\C++\Program\Project_win\Project_win\Redis\include;D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\learn\C++\Program\Project_win\Project_win\Redis\include;D:\learn\C++\Program\Project_win\Project_win\lib;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile />
     <ClCompile>
-      <AdditionalIncludeDirectories>/usr/include/mysql;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\lib\Database;D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\learn\C++\Program\Project_win\Project_win\Redis\include;/usr/include/mysql;D:\learn\C++\MySQL\mysql-8.0.32-winx64\include;D:\learn\C++\MySQL\mysql-8.0.32-winx64\lib;D:\learn\C++\Program\Project_win\Project_win\lib\Database;D:\learn\C++\Program\Project_win\Project_win\lib\freecplus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CppLanguageStandard>c++17</CppLanguageStandard>
     </ClCompile>
     <Link>

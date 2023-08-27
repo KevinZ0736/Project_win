@@ -37,6 +37,7 @@
     <ClCompile Include="lib\Database\ConnectionPool.cpp" />
     <ClCompile Include="lib\freecplus\_mysql.cpp" />
     <ClCompile Include="lib\Database\GetCols.cpp" />
+    <ClCompile Include="..\..\..\Project-win\sourcecode\project\tools\c\webserver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="freecplus">
